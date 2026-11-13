@@ -1,0 +1,68 @@
+{
+    "operator-screen": {
+        "funh-rtde-monitor-robot-monitor": {
+            "title": "Monitor del robot"
+        }
+    },
+    "view": {
+        "registers": "Registro",
+        "signals": "Estado del robot"
+    },
+    "screen": {
+        "registers": "Monitor - Registro",
+        "signals": "Monitor - Estado del robot"
+    },
+    "status": {
+        "live": "En vivo",
+        "waiting": "En espera",
+        "connecting": "Conectando con el backend RTDE…",
+        "unavailable": "{{count}} campos no están disponibles en este controlador"
+    },
+    "filter": {
+        "label": "Filtrar",
+        "placeholder": "Nombre o índice de la señal",
+        "clear": "Borrar"
+    },
+    "layout": {
+        "drag": "Arrastrar para cambiar la posición de esta sección",
+        "reset": "Restablecer el diseño"
+    },
+    "groups": {
+        "input-bit-registers": "Registros de bits de entrada 0–63 (input_bit_registers)",
+        "input-bit-register-x": "Registros de bits de entrada 64–127 (input_bit_register_X)",
+        "input-int-register": "Registros enteros de entrada (input_int_register_X)",
+        "input-double-register": "Registros double de entrada (input_double_register_X)",
+        "output-bit-registers": "Registros de bits de salida 0–63 (output_bit_registers)",
+        "output-bit-register-x": "Registros de bits de salida 64–127 (output_bit_register_X)",
+        "output-int-register": "Registros enteros de salida (output_int_register_X)",
+        "output-double-register": "Registros double de salida (output_double_register_X)",
+        "joints": "Articulaciones",
+        "tcp": "TCP",
+        "io": "E/S",
+        "safety": "Seguridad y programa",
+        "tool": "Herramienta",
+        "payload": "Carga y energía",
+        "controller": "Controlador"
+    },
+    "keypad": {
+        "int": "Registro entero de salida {{address}}",
+        "double": "Registro double de salida {{address}}",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar",
+        "backspace": "Borrar",
+        "sign": "Cambiar el signo",
+        "decimal": "Punto decimal"
+    },
+    "frequency": {
+        "open": "Cambiar la frecuencia",
+        "title": "Frecuencia de muestreo",
+        "unit": "Hz",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar"
+    },
+    "write": {
+        "failed": "No se pudo escribir el registro",
+        "offline": "La pantalla de registros no está conectada",
+        "timeout": "El controlador no respondió a la escritura"
+    }
+}

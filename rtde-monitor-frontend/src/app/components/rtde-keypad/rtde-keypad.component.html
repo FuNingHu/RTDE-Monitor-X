@@ -1,0 +1,29 @@
+<div class="overlay" role="dialog" aria-modal="true">
+    <div class="pad">
+        <h2>{{ (kind() === 'int' ? 'keypad.int' : 'keypad.double') | translate: { address: address() } }}</h2>
+        <div class="entry-row">
+            <div class="entry" [class.placeholder]="draft().length === 0">{{ draft() || '0' }}</div>
+            <button type="button" class="backspace" [disabled]="busy()" (click)="backspace()" [attr.aria-label]="'keypad.backspace' | translate">
+                ⌫
+            </button>
+        </div>
+        <p class="error" *ngIf="error()">{{ error() }}</p>
+        <div class="keys">
+            <button *ngFor="let key of digits" type="button" [disabled]="busy()" (click)="typeDigit(key)">{{ key }}</button>
+            <button type="button" [disabled]="busy()" (click)="toggleSign()" [attr.aria-label]="'keypad.sign' | translate">±</button>
+            <button type="button" [disabled]="busy()" (click)="typeDigit('0')">0</button>
+            <button
+                type="button"
+                [disabled]="kind() === 'int' || busy()"
+                (click)="typeDecimal()"
+                [attr.aria-label]="'keypad.decimal' | translate"
+            >
+                .
+            </button>
+        </div>
+        <div class="actions">
+            <button type="button" (click)="dismiss.emit()" [disabled]="busy()">{{ 'keypad.cancel' | translate }}</button>
+            <button type="button" class="confirm" (click)="confirm()" [disabled]="!canConfirm()">{{ 'keypad.confirm' | translate }}</button>
+        </div>
+    </div>
+</div>

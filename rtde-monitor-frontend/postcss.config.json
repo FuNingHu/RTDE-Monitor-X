@@ -1,0 +1,11 @@
+{
+    "plugins": {
+        "postcss-pxtorem": {
+            "rootValue": 16,
+            "unitPrecision": 5,
+            "propList": ["*"],
+            "mediaQuery": false,
+            "minPixelValue": 2
+        }
+    }
+}

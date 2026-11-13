@@ -1,0 +1,68 @@
+{
+    "operator-screen": {
+        "funh-rtde-monitor-robot-monitor": {
+            "title": "ロボットモニタ"
+        }
+    },
+    "view": {
+        "registers": "レジスタ",
+        "signals": "ロボット状態"
+    },
+    "screen": {
+        "registers": "モニタ - レジスタ",
+        "signals": "モニタ - ロボット状態"
+    },
+    "status": {
+        "live": "通信中",
+        "waiting": "待機中",
+        "connecting": "RTDE バックエンドに接続しています…",
+        "unavailable": "このコントローラでは {{count}} 件のフィールドを利用できません"
+    },
+    "filter": {
+        "label": "絞り込み",
+        "placeholder": "信号名または番号",
+        "clear": "クリア"
+    },
+    "layout": {
+        "drag": "ドラッグしてこの区画の位置を入れ替える",
+        "reset": "レイアウトを初期状態に戻す"
+    },
+    "groups": {
+        "input-bit-registers": "入力ビットレジスタ 0–63（input_bit_registers）",
+        "input-bit-register-x": "入力ビットレジスタ 64–127（input_bit_register_X）",
+        "input-int-register": "入力整数レジスタ（input_int_register_X）",
+        "input-double-register": "入力倍精度レジスタ（input_double_register_X）",
+        "output-bit-registers": "出力ビットレジスタ 0–63（output_bit_registers）",
+        "output-bit-register-x": "出力ビットレジスタ 64–127（output_bit_register_X）",
+        "output-int-register": "出力整数レジスタ（output_int_register_X）",
+        "output-double-register": "出力倍精度レジスタ（output_double_register_X）",
+        "joints": "ジョイント",
+        "tcp": "TCP",
+        "io": "I/O",
+        "safety": "安全とプログラム",
+        "tool": "ツール",
+        "payload": "ペイロードとエネルギー",
+        "controller": "コントローラ"
+    },
+    "keypad": {
+        "int": "出力整数レジスタ {{address}}",
+        "double": "出力倍精度レジスタ {{address}}",
+        "cancel": "キャンセル",
+        "confirm": "確認",
+        "backspace": "削除",
+        "sign": "符号を切り替え",
+        "decimal": "小数点"
+    },
+    "frequency": {
+        "open": "サンプリング周波数を変更",
+        "title": "サンプリング周波数",
+        "unit": "Hz",
+        "cancel": "キャンセル",
+        "confirm": "確定"
+    },
+    "write": {
+        "failed": "レジスタを書き込めませんでした",
+        "offline": "レジスタ画面が接続されていません",
+        "timeout": "コントローラが書き込みに応答しませんでした"
+    }
+}

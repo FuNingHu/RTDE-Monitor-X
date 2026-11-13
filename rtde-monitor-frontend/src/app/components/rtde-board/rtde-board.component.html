@@ -1,0 +1,177 @@
+<div class="toolbar">
+    <section class="status" [class.live]="snapshot()?.ok">
+        <strong class="status-word" [style.animation-duration.s]="statusBlinkPeriod">{{ (snapshot()?.ok ? 'status.live' : 'status.waiting') | translate }}</strong>
+        <span *ngIf="snapshot()?.host">{{ screenTitleKey() | translate }} ·</span>
+        <button
+            *ngIf="snapshot()?.host"
+            type="button"
+            class="frequency"
+            (click)="frequencyOpen.set(true)"
+            [attr.aria-label]="'frequency.open' | translate"
+        >
+            {{ snapshot()?.frequency }} {{ 'frequency.unit' | translate }}
+        </button>
+        <span *ngIf="!snapshot()">{{ 'status.connecting' | translate }}</span>
+        <span *ngIf="snapshot()?.error">{{ snapshot()?.error }}</span>
+        <span class="write-error" *ngIf="writeError()">{{ writeError() }}</span>
+        <span *ngIf="snapshot()?.unavailable?.length">{{ 'status.unavailable' | translate:{ count: snapshot()?.unavailable?.length } }}</span>
+    </section>
+
+    <label class="filter">
+        {{ 'filter.label' | translate }}
+        <span class="filter-field">
+            <input
+                type="text"
+                data-keyboard-layout="alpha-numeric"
+                autocomplete="off"
+                [class.has-value]="query()"
+                [value]="query()"
+                (input)="onQueryInput($event)"
+                [placeholder]="'filter.placeholder' | translate"
+            />
+            <button
+                *ngIf="query()"
+                type="button"
+                class="filter-clear"
+                (pointerdown)="$event.preventDefault()"
+                (click)="clearQuery()"
+                [attr.aria-label]="'filter.clear' | translate"
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M18.3 5.7 12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3z" />
+                </svg>
+            </button>
+        </span>
+        <button type="button" class="reset" (click)="resetLayout()" [disabled]="!layoutChanged()" [attr.aria-label]="'layout.reset' | translate">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 6V3L8 7l4 4V8a4 4 0 1 1-4 4H6a6 6 0 1 0 6-6z" />
+            </svg>
+        </button>
+    </label>
+</div>
+
+<div class="stage" #modules (scroll)="onStageScroll()">
+    <div class="stage-row">
+        <div class="column" *ngFor="let column of columns(); trackBy: trackColumn" [class.focus]="column.focus" [class.paired]="!column.focus">
+            <div
+                class="slot"
+                *ngFor="let slot of column.slots; trackBy: trackSlot"
+                [class.empty]="!slot.group"
+                [attr.data-slot-id]="slot.id"
+                [attr.data-module-id]="slot.group?.id ?? null"
+            >
+                <span class="slot-code">{{ slot.id }}</span>
+                <section class="module" *ngIf="slot.group as group" [class.drag-source]="draggingId() === group.id">
+                    <ng-container *ngTemplateOutlet="moduleCard; context: { group: group }"></ng-container>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+<ng-template #moduleCard let-group="group">
+    <header
+        class="module-header"
+        [class.locked]="filtering()"
+        role="button"
+        [attr.aria-label]="'layout.drag' | translate"
+        (pointerdown)="startDrag($event, group.id)"
+    >
+        <span class="grip" aria-hidden="true"></span>
+        <span class="module-title">{{ 'groups.' + group.id | translate }}</span>
+    </header>
+    <div class="module-body" (scroll)="onCardScroll(group.id, $event)">
+        <div class="bits" *ngIf="group.kind === 'bits'">
+            <ng-container *ngFor="let item of group.items; trackBy: trackItem">
+                <button
+                    *ngIf="canWrite(item); else readonlyBit"
+                    type="button"
+                    class="bit"
+                    [class.on]="isOn(item)"
+                    [disabled]="editorBusy()"
+                    [title]="item.name"
+                    (click)="onBit(item)"
+                >
+                    {{ item.label }}
+                </button>
+                <ng-template #readonlyBit>
+                    <span class="bit" [class.on]="isOn(item)" [title]="item.name">{{ item.label }}</span>
+                </ng-template>
+            </ng-container>
+        </div>
+        <div class="numbers" *ngIf="group.kind === 'numbers'">
+            <ng-container *ngFor="let item of group.items; trackBy: trackItem">
+                <button
+                    *ngIf="canWrite(item); else readonlyCell"
+                    type="button"
+                    class="cell"
+                    [disabled]="editorBusy()"
+                    [title]="item.name"
+                    (click)="onNumber(item)"
+                >
+                    <span class="label">{{ wrapLabel(item.label) }}</span>
+                    <ng-container *ngTemplateOutlet="valueView; context: { item: item }"></ng-container>
+                </button>
+                <ng-template #readonlyCell>
+                    <div class="cell" [title]="item.name">
+                        <span class="label">{{ wrapLabel(item.label) }}</span>
+                        <ng-container *ngTemplateOutlet="valueView; context: { item: item }"></ng-container>
+                    </div>
+                </ng-template>
+            </ng-container>
+        </div>
+        <div class="fields" *ngIf="group.kind === 'fields'">
+            <ng-container *ngFor="let item of group.items; trackBy: trackItem">
+                <div class="bit-field" *ngIf="isBitWord(item); else scalarField">
+                    <div class="field">
+                        <span class="label">{{ wrapLabel(item.label) }}</span>
+                        <button type="button" class="value bit-toggle" (click)="toggleBitWord(item.name)" [attr.aria-expanded]="bitWordOpen(item.name)">
+                            {{ format(item) }}
+                        </button>
+                    </div>
+                    <div class="bits" *ngIf="bitWordOpen(item.name)">
+                        <span
+                            class="bit"
+                            *ngFor="let bit of bitWord(item)"
+                            [class.on]="bit.on"
+                            [title]="item.name + ' [' + bit.index + ']'"
+                        >{{ bit.index }}</span>
+                    </div>
+                </div>
+                <ng-template #scalarField>
+                    <div class="field">
+                        <span class="label">{{ wrapLabel(item.label) }}</span>
+                        <ng-container *ngTemplateOutlet="valueView; context: { item: item }"></ng-container>
+                    </div>
+                </ng-template>
+            </ng-container>
+        </div>
+    </div>
+</ng-template>
+
+<ng-template #valueView let-item="item">
+    <span class="vector" *ngIf="isVector(item); else scalarValue">
+        <span class="vector-item" *ngFor="let part of vectorParts(item)">{{ part }}</span>
+    </span>
+    <ng-template #scalarValue>
+        <span class="value">{{ format(item) }}</span>
+    </ng-template>
+</ng-template>
+
+<app-rtde-frequency-dialog
+    *ngIf="frequencyOpen()"
+    [value]="displayedFrequency()"
+    (dismiss)="frequencyOpen.set(false)"
+    (confirmFrequency)="applyFrequency($event)"
+></app-rtde-frequency-dialog>
+
+<app-rtde-keypad
+    *ngIf="editor() as current"
+    [kind]="current.kind"
+    [address]="current.address"
+    [initial]="current.initial"
+    [error]="editorError()"
+    [busy]="editorBusy()"
+    (dismiss)="closeEditor()"
+    (confirmValue)="onConfirm($event)"
+></app-rtde-keypad>

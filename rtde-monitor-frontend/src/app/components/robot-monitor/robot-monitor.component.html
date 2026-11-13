@@ -1,0 +1,8 @@
+<app-rtde-board
+    [snapshot]="snapshot()"
+    [layoutKey]="view()"
+    [registerWriter]="writable() ? writeRegister : undefined"
+    [savedLayout]="layout()"
+    [layoutSaver]="saveLayout"
+    [frequencySetter]="setFrequency"
+></app-rtde-board>

@@ -1,0 +1,68 @@
+{
+    "operator-screen": {
+        "funh-rtde-monitor-robot-monitor": {
+            "title": "Moniteur robot"
+        }
+    },
+    "view": {
+        "registers": "Registre",
+        "signals": "État du robot"
+    },
+    "screen": {
+        "registers": "Moniteur - Registre",
+        "signals": "Moniteur - État du robot"
+    },
+    "status": {
+        "live": "En direct",
+        "waiting": "En attente",
+        "connecting": "Connexion au backend RTDE…",
+        "unavailable": "{{count}} champs ne sont pas disponibles sur ce contrôleur"
+    },
+    "filter": {
+        "label": "Filtrer",
+        "placeholder": "Nom ou indice du signal",
+        "clear": "Effacer"
+    },
+    "layout": {
+        "drag": "Faire glisser pour déplacer cette section",
+        "reset": "Rétablir la disposition par défaut"
+    },
+    "groups": {
+        "input-bit-registers": "Registres de bits d’entrée 0–63 (input_bit_registers)",
+        "input-bit-register-x": "Registres de bits d’entrée 64–127 (input_bit_register_X)",
+        "input-int-register": "Registres entiers d’entrée (input_int_register_X)",
+        "input-double-register": "Registres double d’entrée (input_double_register_X)",
+        "output-bit-registers": "Registres de bits de sortie 0–63 (output_bit_registers)",
+        "output-bit-register-x": "Registres de bits de sortie 64–127 (output_bit_register_X)",
+        "output-int-register": "Registres entiers de sortie (output_int_register_X)",
+        "output-double-register": "Registres double de sortie (output_double_register_X)",
+        "joints": "Articulations",
+        "tcp": "TCP",
+        "io": "E/S",
+        "safety": "Sécurité et programme",
+        "tool": "Outil",
+        "payload": "Charge et énergie",
+        "controller": "Contrôleur"
+    },
+    "keypad": {
+        "int": "Registre entier de sortie {{address}}",
+        "double": "Registre double de sortie {{address}}",
+        "cancel": "Annuler",
+        "confirm": "Confirmer",
+        "backspace": "Effacer",
+        "sign": "Changer de signe",
+        "decimal": "Séparateur décimal"
+    },
+    "frequency": {
+        "open": "Modifier la fréquence",
+        "title": "Fréquence d'échantillonnage",
+        "unit": "Hz",
+        "cancel": "Annuler",
+        "confirm": "Confirmer"
+    },
+    "write": {
+        "failed": "Impossible d'écrire le registre",
+        "offline": "L'écran des registres n'est pas connecté",
+        "timeout": "Le contrôleur n'a pas répondu à l'écriture"
+    }
+}

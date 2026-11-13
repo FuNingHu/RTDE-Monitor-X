@@ -1,0 +1,68 @@
+{
+    "operator-screen": {
+        "funh-rtde-monitor-robot-monitor": {
+            "title": "Roboter-Monitor"
+        }
+    },
+    "view": {
+        "registers": "Register",
+        "signals": "Roboterstatus"
+    },
+    "screen": {
+        "registers": "Monitor - Register",
+        "signals": "Monitor - Roboterstatus"
+    },
+    "status": {
+        "live": "Live",
+        "waiting": "Warten",
+        "connecting": "Verbindung zum RTDE-Backend wird hergestellt…",
+        "unavailable": "{{count}} Felder sind auf dieser Steuerung nicht verfügbar"
+    },
+    "filter": {
+        "label": "Filtern",
+        "placeholder": "Signalname oder Index",
+        "clear": "Löschen"
+    },
+    "layout": {
+        "drag": "Ziehen, um diesen Bereich zu verschieben",
+        "reset": "Layout zurücksetzen"
+    },
+    "groups": {
+        "input-bit-registers": "Eingangs-Bitregister 0–63 (input_bit_registers)",
+        "input-bit-register-x": "Eingangs-Bitregister 64–127 (input_bit_register_X)",
+        "input-int-register": "Eingangs-Integerregister (input_int_register_X)",
+        "input-double-register": "Eingangs-Double-Register (input_double_register_X)",
+        "output-bit-registers": "Ausgangs-Bitregister 0–63 (output_bit_registers)",
+        "output-bit-register-x": "Ausgangs-Bitregister 64–127 (output_bit_register_X)",
+        "output-int-register": "Ausgangs-Integerregister (output_int_register_X)",
+        "output-double-register": "Ausgangs-Double-Register (output_double_register_X)",
+        "joints": "Gelenke",
+        "tcp": "TCP",
+        "io": "E/A",
+        "safety": "Sicherheit und Programm",
+        "tool": "Werkzeug",
+        "payload": "Nutzlast und Energie",
+        "controller": "Steuerung"
+    },
+    "keypad": {
+        "int": "Ausgangs-Integerregister {{address}}",
+        "double": "Ausgangs-Double-Register {{address}}",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen",
+        "backspace": "Löschen",
+        "sign": "Vorzeichen wechseln",
+        "decimal": "Dezimalpunkt"
+    },
+    "frequency": {
+        "open": "Abtastrate ändern",
+        "title": "Abtastrate",
+        "unit": "Hz",
+        "cancel": "Abbrechen",
+        "confirm": "Bestätigen"
+    },
+    "write": {
+        "failed": "Register konnte nicht geschrieben werden",
+        "offline": "Die Registeransicht ist nicht verbunden",
+        "timeout": "Die Steuerung hat nicht auf das Schreiben geantwortet"
+    }
+}

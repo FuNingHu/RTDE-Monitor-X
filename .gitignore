@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+rtde-monitor-frontend/node_modules/
+rtde-monitor-backend/node_modules/
+npm/
+node/
+
+# Build outputs
+dist/
+rtde-monitor-frontend/dist/
+target/
+.angular/
+rtde-monitor-frontend/.angular/
+out-tsc/
+tmp/
+bazel-out/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-error.log*
+testem.log
+
+# Profiling
+chrome-profiler-events*.json
+speed-measure-plugin*.json
+
+# IDE
+.idea/
+.vscode/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+.history/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Coverage and caches
+coverage/
+.sass-cache/
+connect.lock
+typings/

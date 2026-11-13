@@ -1,0 +1,26 @@
+metadata:
+  vendorID: "funh"
+  urcapID: "rtde-monitor"
+  vendorName: "funh"
+  urcapName: "RTDE Monitor"
+  version: 1.0.2
+artifacts:
+  webArchives:
+  - id: "rtde-monitor-frontend"
+    folder: "rtde-monitor-frontend"
+  
+  containers:
+  - id: "rtde-monitor-backend"
+    image: "rtde-monitor-backend:latest"
+    services:
+      - service: urcontrol-rtde
+      - service: urcontrol-secondary
+    mounts:
+      - mount: persistent:/data
+        access: rw
+    ingress:
+      - id: websocket-api
+        containerPort: 52762
+        protocol: websocket
+        proxyUrl: /
+  

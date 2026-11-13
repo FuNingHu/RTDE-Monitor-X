@@ -1,0 +1,68 @@
+{
+    "operator-screen": {
+        "funh-rtde-monitor-robot-monitor": {
+            "title": "로봇 모니터"
+        }
+    },
+    "view": {
+        "registers": "레지스터",
+        "signals": "로봇 상태"
+    },
+    "screen": {
+        "registers": "모니터 - 레지스터",
+        "signals": "모니터 - 로봇 상태"
+    },
+    "status": {
+        "live": "실시간",
+        "waiting": "대기 중",
+        "connecting": "RTDE 백엔드에 연결하는 중…",
+        "unavailable": "이 컨트롤러에서 {{count}}개 필드를 사용할 수 없습니다"
+    },
+    "filter": {
+        "label": "필터",
+        "placeholder": "신호 이름 또는 인덱스",
+        "clear": "지우기"
+    },
+    "layout": {
+        "drag": "끌어서 이 구역의 위치를 바꿉니다",
+        "reset": "기본 레이아웃으로 되돌리기"
+    },
+    "groups": {
+        "input-bit-registers": "입력 비트 레지스터 0–63 (input_bit_registers)",
+        "input-bit-register-x": "입력 비트 레지스터 64–127 (input_bit_register_X)",
+        "input-int-register": "입력 정수 레지스터 (input_int_register_X)",
+        "input-double-register": "입력 배정밀도 레지스터 (input_double_register_X)",
+        "output-bit-registers": "출력 비트 레지스터 0–63 (output_bit_registers)",
+        "output-bit-register-x": "출력 비트 레지스터 64–127 (output_bit_register_X)",
+        "output-int-register": "출력 정수 레지스터 (output_int_register_X)",
+        "output-double-register": "출력 배정밀도 레지스터 (output_double_register_X)",
+        "joints": "관절",
+        "tcp": "TCP",
+        "io": "I/O",
+        "safety": "안전 및 프로그램",
+        "tool": "툴",
+        "payload": "페이로드 및 에너지",
+        "controller": "컨트롤러"
+    },
+    "keypad": {
+        "int": "출력 정수 레지스터 {{address}}",
+        "double": "출력 배정밀도 레지스터 {{address}}",
+        "cancel": "취소",
+        "confirm": "확인",
+        "backspace": "삭제",
+        "sign": "부호 전환",
+        "decimal": "소수점"
+    },
+    "frequency": {
+        "open": "샘플링 주파수 변경",
+        "title": "샘플링 주파수",
+        "unit": "Hz",
+        "cancel": "취소",
+        "confirm": "확인"
+    },
+    "write": {
+        "failed": "레지스터를 쓰지 못했습니다",
+        "offline": "레지스터 화면이 연결되지 않았습니다",
+        "timeout": "컨트롤러가 쓰기에 응답하지 않았습니다"
+    }
+}

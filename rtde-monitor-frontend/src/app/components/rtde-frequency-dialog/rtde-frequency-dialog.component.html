@@ -1,0 +1,26 @@
+<div class="overlay" (click)="dismiss.emit()">
+    <section class="dialog" (click)="$event.stopPropagation()" role="dialog" [attr.aria-label]="'frequency.title' | translate">
+        <h2>{{ 'frequency.title' | translate }}</h2>
+        <div class="wheel-frame">
+            <div class="wheel" #wheel (scroll)="onWheelScroll()">
+                <div class="wheel-pad"></div>
+                <button
+                    type="button"
+                    class="wheel-item"
+                    *ngFor="let hz of choices"
+                    [class.selected]="hz === draft()"
+                    (click)="moveTo(hz)"
+                >
+                    {{ hz }}
+                </button>
+                <div class="wheel-pad"></div>
+            </div>
+            <div class="highlight" aria-hidden="true"></div>
+        </div>
+        <p class="selection">{{ draft() }} {{ 'frequency.unit' | translate }}</p>
+        <div class="actions">
+            <button type="button" (click)="dismiss.emit()">{{ 'frequency.cancel' | translate }}</button>
+            <button type="button" class="confirm" (click)="confirm()">{{ 'frequency.confirm' | translate }}</button>
+        </div>
+    </section>
+</div>

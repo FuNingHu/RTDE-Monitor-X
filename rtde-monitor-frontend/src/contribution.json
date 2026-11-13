@@ -1,0 +1,15 @@
+{
+  "applicationNodes": [],
+  "programNodes": [],
+  "smartSkills": [],
+  "sidebarItems": [],
+  "operatorScreens": [
+    {
+      "translationPath": "assets/i18n/",
+      "behaviorURI": "robot-monitor.worker.js",
+      "presenterURI": "main.js",
+      "componentTagName": "funh-rtde-monitor-robot-monitor",
+      "configurationComponentTagName": "funh-rtde-monitor-robot-monitor-config"
+    }
+  ]
+}

@@ -1,0 +1,68 @@
+{
+    "operator-screen": {
+        "funh-rtde-monitor-robot-monitor": {
+            "title": "机器人监控"
+        }
+    },
+    "view": {
+        "registers": "寄存器",
+        "signals": "机器人状态"
+    },
+    "screen": {
+        "registers": "监控 - 寄存器",
+        "signals": "监控 - 机器人状态"
+    },
+    "status": {
+        "live": "实时",
+        "waiting": "等待中",
+        "connecting": "正在连接 RTDE 后端…",
+        "unavailable": "此控制器上有 {{count}} 个字段不可用"
+    },
+    "filter": {
+        "label": "筛选",
+        "placeholder": "信号名或序号",
+        "clear": "清空"
+    },
+    "layout": {
+        "drag": "拖动以调整这个分区的位置",
+        "reset": "恢复默认布局"
+    },
+    "groups": {
+        "input-bit-registers": "输入位寄存器 0–63（input_bit_registers）",
+        "input-bit-register-x": "输入位寄存器 64–127（input_bit_register_X）",
+        "input-int-register": "输入整数寄存器（input_int_register_X）",
+        "input-double-register": "输入双精度寄存器（input_double_register_X）",
+        "output-bit-registers": "输出位寄存器 0–63（output_bit_registers）",
+        "output-bit-register-x": "输出位寄存器 64–127（output_bit_register_X）",
+        "output-int-register": "输出整数寄存器（output_int_register_X）",
+        "output-double-register": "输出双精度寄存器（output_double_register_X）",
+        "joints": "关节",
+        "tcp": "TCP",
+        "io": "I/O",
+        "safety": "安全与程序",
+        "tool": "工具",
+        "payload": "负载与能量",
+        "controller": "控制器"
+    },
+    "keypad": {
+        "int": "输出整数寄存器 {{address}}",
+        "double": "输出双精度寄存器 {{address}}",
+        "cancel": "取消",
+        "confirm": "确认",
+        "backspace": "删除",
+        "sign": "切换正负",
+        "decimal": "小数点"
+    },
+    "frequency": {
+        "open": "修改采样频率",
+        "title": "采样频率",
+        "unit": "Hz",
+        "cancel": "取消",
+        "confirm": "确认"
+    },
+    "write": {
+        "failed": "寄存器写入失败",
+        "offline": "寄存器界面未连接",
+        "timeout": "控制器没有响应这次写入"
+    }
+}

@@ -1,0 +1,68 @@
+{
+    "operator-screen": {
+        "funh-rtde-monitor-robot-monitor": {
+            "title": "Robot Monitor"
+        }
+    },
+    "view": {
+        "registers": "Register",
+        "signals": "Robot Status"
+    },
+    "screen": {
+        "registers": "Monitor - Register",
+        "signals": "Monitor - Robot Status"
+    },
+    "status": {
+        "live": "Live",
+        "waiting": "Waiting",
+        "connecting": "Connecting to the RTDE backend…",
+        "unavailable": "{{count}} fields are not available on this controller"
+    },
+    "filter": {
+        "label": "Filter",
+        "placeholder": "Signal name or index",
+        "clear": "Clear"
+    },
+    "layout": {
+        "drag": "Drag to rearrange this section",
+        "reset": "Reset layout"
+    },
+    "groups": {
+        "input-bit-registers": "input_bit_registers (0–63)",
+        "input-bit-register-x": "input_bit_register_X (64–127)",
+        "input-int-register": "input_int_register_X (0–47)",
+        "input-double-register": "input_double_register_X (0–47)",
+        "output-bit-registers": "output_bit_registers (0–63)",
+        "output-bit-register-x": "output_bit_register_X (64–127)",
+        "output-int-register": "output_int_register_X (0–47)",
+        "output-double-register": "output_double_register_X (0–47)",
+        "joints": "Joints",
+        "tcp": "TCP",
+        "io": "I/O",
+        "safety": "Safety and program",
+        "tool": "Tool",
+        "payload": "Payload and energy",
+        "controller": "Controller"
+    },
+    "keypad": {
+        "int": "Output integer register {{address}}",
+        "double": "Output double register {{address}}",
+        "cancel": "Cancel",
+        "confirm": "Confirm",
+        "backspace": "Delete",
+        "sign": "Change sign",
+        "decimal": "Decimal point"
+    },
+    "frequency": {
+        "open": "Change sample rate",
+        "title": "Sample rate",
+        "unit": "Hz",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+    },
+    "write": {
+        "failed": "Could not write the register",
+        "offline": "The register screen is not connected",
+        "timeout": "The controller did not answer the write"
+    }
+}

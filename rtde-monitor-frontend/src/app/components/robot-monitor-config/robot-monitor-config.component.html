@@ -1,0 +1,14 @@
+<div class="segments" role="tablist">
+    <span class="thumb" [style.transform]="'translateX(' + selectedIndex() * 100 + '%)'" aria-hidden="true"></span>
+    <button
+        *ngFor="let page of pages"
+        type="button"
+        class="segment"
+        role="tab"
+        [class.selected]="selected() === page.id"
+        [attr.aria-selected]="selected() === page.id"
+        (click)="select(page.id)"
+    >
+        {{ page.labelKey | translate }}
+    </button>
+</div>
