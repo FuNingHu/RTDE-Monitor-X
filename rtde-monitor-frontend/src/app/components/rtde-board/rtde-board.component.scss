@@ -157,8 +157,7 @@
     flex-direction: column;
     align-items: flex-start;
     padding-bottom: 12px;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: visible;
 }
 
 .stage-row {
@@ -169,8 +168,8 @@
     flex-direction: row;
     align-items: stretch;
     gap: 12px;
-    width: max-content;
-    min-width: 100%;
+    width: 100%;
+    min-width: min-content;
 }
 
 .column {
@@ -195,8 +194,75 @@
     flex: 1 1 auto;
 }
 
-.column.paired .slot {
-    flex: 1 1 0;
+.cube-scene {
+    flex: 1 1 auto;
+    min-width: 220px;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1100px;
+    perspective-origin: center center;
+}
+
+.cube {
+    position: relative;
+    flex: none;
+    transform-style: preserve-3d;
+    will-change: transform;
+}
+
+.cube.dragging {
+    transition: none;
+    will-change: transform;
+}
+
+.cube.turning {
+    transition: transform 280ms ease;
+    pointer-events: none;
+}
+
+.face {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border-default, #d5d5d5);
+    border-radius: 8px;
+    background: var(--color-background-level-02, #fff);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    backface-visibility: hidden;
+}
+
+.face.empty {
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    box-shadow: none;
+    border-style: dashed;
+}
+
+.face:not(.front) {
+    cursor: grab;
+    touch-action: none;
+}
+
+.cube.dragging .face,
+.cube.turning .face {
+    cursor: grab;
+}
+
+.face:not(.front) .module,
+.cube.dragging .module,
+.cube.turning .module {
+    pointer-events: none;
+}
+
+.face .module {
+    position: relative;
+    z-index: 1;
+    height: 100%;
 }
 
 .slot.empty {
@@ -324,14 +390,9 @@
     padding: 0 12px 10px;
 }
 
-button.bit-toggle {
-    border: 0;
-    padding: 0;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    font-weight: 700;
+.bit-row {
     cursor: pointer;
+    pointer-events: auto;
 }
 
 .bit-field .bit {
@@ -440,6 +501,12 @@ button.cell:disabled {
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .cube.turning {
+        transition: none;
+    }
 }
 
 @media (min-width: 1600px) {

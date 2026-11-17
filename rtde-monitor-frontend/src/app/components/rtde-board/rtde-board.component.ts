@@ -1,11 +1,15 @@
-import { afterRenderEffect, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
+import { afterRenderEffect, AfterViewInit, ChangeDetectionStrategy, Component, computed, effect, ElementRef, inject, input, NgZone, OnDestroy, signal, untracked, ViewChild } from '@angular/core';
 import {
+    CUBE_CLICK_PX,
+    CUBE_DRAG_DEG_PER_PX,
+    CUBE_FACES,
+    CUBE_RESUME_MS,
+    CUBE_TURN_MS,
     DISPLAY_SIGNIFICANT_DIGITS,
     DRAG_EDGE_PX,
     DRAG_EDGE_STEP_PX,
     DRAG_FINISH_MS,
     DRAG_SETTLE_MS,
-    LAYOUT_COLUMN_COUNT,
     LAYOUT_FOCUS_COLUMNS,
     LAYOUT_SLOTS,
     FREQUENCY_DEFAULT_HZ,
@@ -16,7 +20,7 @@ import {
     SCROLL_RESTORE_TOLERANCE_PX,
     SCROLL_SAVE_DELAY_MS,
 } from '../../constant';
-import { BoardLayout, RegisterWrite, RtdeGroup, RtdeItem, RtdeSnapshot, emptyBoardLayout, readBoardLayout } from '../rtde-snapshot';
+import { BoardLayout, CubeAngles, RegisterWrite, RtdeGroup, RtdeItem, RtdeSnapshot, emptyBoardLayout, normalizeAngle, readBoardLayout } from '../rtde-snapshot';
 
 interface NumberEditor {
     kind: 'int' | 'double';
@@ -26,15 +30,13 @@ interface NumberEditor {
 
 interface BoardSlot {
     id: string;
-    column: number;
     focus: boolean;
     group: RtdeGroup | null;
 }
 
-interface BoardColumn {
-    number: number;
-    focus: boolean;
-    slots: BoardSlot[];
+interface CubeFaceSlot extends BoardSlot {
+    front: boolean;
+    transform: string;
 }
 
 @Component({
@@ -44,8 +46,9 @@ interface BoardColumn {
     changeDetection: ChangeDetectionStrategy.OnPush,
     standalone: false,
 })
-export class RtdeBoardComponent implements OnDestroy {
+export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
     private readonly host = inject(ElementRef<HTMLElement>);
+    private readonly zone = inject(NgZone);
     readonly snapshot = input<RtdeSnapshot | null>(null);
     readonly registerWriter = input<((command: RegisterWrite) => Promise<void>) | undefined>(undefined);
     readonly layoutKey = input('board');
@@ -60,8 +63,14 @@ export class RtdeBoardComponent implements OnDestroy {
     readonly scrollTarget = signal(0);
     readonly viewportScroll = signal(0);
     private readonly cardScroll = signal<Record<string, number>>({});
+    readonly cube = signal<CubeAngles>({ x: 0, y: 0 });
+    readonly cubeDragging = signal(false);
+    readonly cubeTurning = signal(false);
+    readonly cubeSide = signal(240);
     readonly draggingId = signal<string | null>(null);
     @ViewChild('modules') private modulesRef?: ElementRef<HTMLElement>;
+    @ViewChild('cubeScene') private cubeSceneRef?: ElementRef<HTMLElement>;
+    @ViewChild('cube') private cubeRef?: ElementRef<HTMLElement>;
     private ghost: HTMLElement | null = null;
     private dragPointer = -1;
     private grabOffsetX = 0;
@@ -70,6 +79,16 @@ export class RtdeBoardComponent implements OnDestroy {
     private originIds: string[] = [];
     private settleTimer: ReturnType<typeof setTimeout> | undefined;
     private scrollSaveTimer: ReturnType<typeof setTimeout> | undefined;
+    private cubePointer = -1;
+    private cubeOriginX = 0;
+    private cubeOriginY = 0;
+    private cubeLastX = 0;
+    private cubeLastY = 0;
+    private cubeDragX = 0;
+    private cubeDragY = 0;
+    private cubeGrabFace: string | null = null;
+    private cubeTurnTimer: ReturnType<typeof setTimeout> | undefined;
+    private cubeObserver: ResizeObserver | undefined;
     private scrollRestored = false;
     private scrollRestoreAttempts = 0;
     readonly editor = signal<NumberEditor | null>(null);
@@ -77,9 +96,37 @@ export class RtdeBoardComponent implements OnDestroy {
     readonly editorBusy = signal(false);
     readonly writeError = signal('');
     private readonly openBitWords = signal<ReadonlySet<string>>(new Set());
+    /** Card values stay on this copy while the cube is moving, so a sample cannot repaint the faces. */
+    readonly shownSnapshot = signal<RtdeSnapshot | null>(null);
+    private cubePaintFrame = 0;
+    private cubeResumeTimer: ReturnType<typeof setTimeout> | undefined;
+    private cubeHolding = false;
+
+    private readonly holdSnapshot = effect(() => {
+        const next = this.snapshot();
+        const moving = this.cubeDragging() || this.cubeTurning();
+        untracked(() => {
+            if (moving) {
+                this.cubeHolding = true;
+                this.clearCubeResume();
+                return;
+            }
+            if (this.cubeHolding) {
+                if (this.cubeResumeTimer === undefined) {
+                    this.cubeResumeTimer = setTimeout(() => {
+                        this.cubeResumeTimer = undefined;
+                        this.cubeHolding = false;
+                        this.shownSnapshot.set(this.snapshot());
+                    }, CUBE_RESUME_MS);
+                }
+                return;
+            }
+            this.shownSnapshot.set(next);
+        });
+    });
 
     readonly visibleGroups = computed(() => {
-        const groups = this.snapshot()?.groups ?? [];
+        const groups = this.shownSnapshot()?.groups ?? [];
         const query = this.query().trim().toLowerCase();
         if (!query) {
             return groups;
@@ -95,48 +142,78 @@ export class RtdeBoardComponent implements OnDestroy {
     readonly filtering = computed(() => this.query().trim().length > 0);
 
     readonly layoutChanged = computed(() => {
-        const groups = this.snapshot()?.groups ?? [];
+        const groups = this.shownSnapshot()?.groups ?? [];
         const current = this.pack(groups, this.order());
         const natural = this.pack(groups, []);
         const orderChanged = current.some((id, index) => id !== natural[index]);
         const cardChanged = Object.values(this.cardScroll()).some((top) => top > 1);
-        return orderChanged || this.viewportScroll() > 1 || cardChanged;
+        const cube = this.cube();
+        const cubeMoved = normalizeAngle(cube.x) !== 0 || normalizeAngle(cube.y) !== 0;
+        return orderChanged || this.viewportScroll() > 1 || cardChanged || cubeMoved;
     });
 
-    readonly columns = computed((): BoardColumn[] => {
-        const ids = this.pack(this.snapshot()?.groups ?? [], this.order());
+    readonly slots = computed((): BoardSlot[] => {
+        const ids = this.pack(this.shownSnapshot()?.groups ?? [], this.order());
         const visible = new Map(this.visibleGroups().map((group) => [group.id, group]));
-        const slots = LAYOUT_SLOTS.map((id, index) => {
-            const column = Number(id.slice(1));
-            const groupId = ids[index] ?? '';
-            return {
-                id,
-                column,
-                focus: column <= LAYOUT_FOCUS_COLUMNS,
-                group: visible.get(groupId) ?? null,
-            };
-        });
-        return Array.from({ length: LAYOUT_COLUMN_COUNT }, (_, index) => {
-            const number = index + 1;
-            return {
-                number,
-                focus: number <= LAYOUT_FOCUS_COLUMNS,
-                slots: slots.filter((slot) => slot.column === number),
-            };
-        });
+        return LAYOUT_SLOTS.map((id, index) => ({
+            id,
+            focus: index < LAYOUT_FOCUS_COLUMNS,
+            group: visible.get(ids[index] ?? '') ?? null,
+        }));
+    });
+
+    readonly focusSlots = computed(() => this.slots().filter((slot) => slot.focus));
+
+    readonly frontFaceId = computed(() => this.facingFace(this.cube().x, this.cube().y));
+
+    readonly cubeTransform = computed(() => {
+        const cube = this.cube();
+        return `rotateX(${cube.x}deg) rotateY(${cube.y}deg)`;
+    });
+
+    private readonly paintCubeAngle = afterRenderEffect(() => {
+        const transform = this.cubeTransform();
+        this.cubeTurning();
+        if (this.cubePointer !== -1) {
+            return;
+        }
+        this.applyCubeTransform(transform);
+    });
+
+    private readonly restoreMovedBodies = afterRenderEffect(() => {
+        const moving = this.cubeDragging() || this.cubeTurning();
+        if (moving || !this.scrollRestored) {
+            return;
+        }
+        untracked(() => this.applyCardScrolls(this.cardScroll()));
+    });
+
+    readonly cubeFaces = computed((): CubeFaceSlot[] => {
+        const half = this.cubeSide() / 2;
+        const front = this.frontFaceId();
+        return this.slots()
+            .filter((slot) => !slot.focus)
+            .map((slot) => {
+                const face = CUBE_FACES.find((entry) => entry.id === slot.id) ?? CUBE_FACES[0];
+                return { ...slot, front: slot.id === front, transform: `${face.rotation} translateZ(${half}px)` };
+            });
     });
 
     private readonly restoredOrder = effect(() => {
         const key = this.layoutKey();
         const remote = this.savedLayout();
-        if (this.dragPointer !== -1) {
+        if (this.dragPointer !== -1 || this.cubePointer !== -1 || untracked(() => this.cubeTurning())) {
             return;
         }
         const layout = remote ?? this.readLocal(key);
         const cardsChanged = untracked(() => !this.sameCards(layout.cards));
+        const cubeChanged = untracked(() => !this.sameCube(layout.cube));
         this.order.set([...layout.order]);
         if (cardsChanged) {
             this.cardScroll.set({ ...layout.cards });
+        }
+        if (cubeChanged) {
+            this.cube.set({ ...layout.cube });
         }
         if (remote) {
             this.writeLocal(key, layout);
@@ -153,7 +230,7 @@ export class RtdeBoardComponent implements OnDestroy {
     private readonly restoreScroll = afterRenderEffect(() => {
         const target = this.scrollTarget();
         const cards = this.cardScroll();
-        const ready = (this.snapshot()?.groups.length ?? 0) > 0;
+        const ready = (this.shownSnapshot()?.groups.length ?? 0) > 0;
         const scroller = this.modulesRef?.nativeElement;
         if (!ready || !scroller || this.scrollRestored || this.dragPointer !== -1) {
             return;
@@ -172,8 +249,13 @@ export class RtdeBoardComponent implements OnDestroy {
             return;
         }
         this.clearScrollSave();
+        this.clearCubeTurn();
+        this.clearCubeResume();
+        this.cubeHolding = false;
+        this.cubeTurning.set(false);
         this.order.set([]);
         this.cardScroll.set({});
+        this.cube.set({ x: 0, y: 0 });
         this.scrollTarget.set(0);
         this.scrollRestoreAttempts = 0;
         this.scrollRestored = true;
@@ -219,7 +301,7 @@ export class RtdeBoardComponent implements OnDestroy {
     }
 
     displayedFrequency(): number {
-        const frequency = this.snapshot()?.frequency ?? 0;
+        const frequency = this.shownSnapshot()?.frequency ?? 0;
         if (frequency >= FREQUENCY_MIN_HZ && frequency <= FREQUENCY_MAX_HZ) {
             return frequency;
         }
@@ -402,20 +484,81 @@ export class RtdeBoardComponent implements OnDestroy {
         return precise.toFixed(decimals);
     }
 
+    ngAfterViewInit(): void {
+        const scene = this.cubeSceneRef?.nativeElement;
+        if (!scene) {
+            return;
+        }
+        this.cubeObserver = new ResizeObserver(() => this.measureCube());
+        this.cubeObserver.observe(scene);
+        this.measureCube();
+    }
+
     ngOnDestroy(): void {
         this.clearSettleTimer();
-        if (this.scrollSaveTimer !== undefined) {
+        this.clearCubeTurn();
+        this.clearCubeResume();
+        this.cubeHolding = false;
+        this.cubeTurning.set(false);
+        this.cubeObserver?.disconnect();
+        if (this.cubePaintFrame !== 0) {
+            cancelAnimationFrame(this.cubePaintFrame);
+            this.cubePaintFrame = 0;
+        }
+        if (this.cubePointer !== -1) {
+            this.cube.set({ x: normalizeAngle(this.cubeDragX), y: normalizeAngle(this.cubeDragY) });
+        }
+        if (this.scrollSaveTimer !== undefined || this.cubePointer !== -1) {
             this.persist(this.order(), this.currentScroll());
         }
         this.clearScrollSave();
         this.detachDragListeners();
+        this.detachCubeListeners();
         this.releaseCapture(this.dragPointer);
         this.ghost?.remove();
         this.ghost = null;
     }
 
+    onCubePointerDown(event: PointerEvent): void {
+        if (event.button !== 0 || this.draggingId() || this.settleTimer || this.cubePointer !== -1 || this.cubeTurning()) {
+            return;
+        }
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+        if (target.closest('.module-header')) {
+            return;
+        }
+        const face = target.closest('[data-face]');
+        const faceId = face?.getAttribute('data-face') ?? null;
+        if (faceId && faceId === this.frontFaceId() && target.closest('.module')) {
+            return;
+        }
+        event.preventDefault();
+        const angle = this.cube();
+        this.cubePointer = event.pointerId;
+        this.cubeOriginX = event.clientX;
+        this.cubeOriginY = event.clientY;
+        this.cubeLastX = event.clientX;
+        this.cubeLastY = event.clientY;
+        this.cubeDragX = angle.x;
+        this.cubeDragY = angle.y;
+        this.cubeGrabFace = faceId;
+        this.cubeDragging.set(true);
+        this.attachCubeListeners();
+        const scene = event.currentTarget;
+        if (scene instanceof HTMLElement) {
+            try {
+                scene.setPointerCapture(event.pointerId);
+            } catch {
+                // Document listeners keep the turn going if the scene is replaced.
+            }
+        }
+    }
+
     startDrag(event: PointerEvent, id: string): void {
-        if (this.filtering() || this.draggingId() || this.settleTimer || event.button !== 0) {
+        if (this.filtering() || this.draggingId() || this.settleTimer || this.cubePointer !== -1 || this.cubeTurning() || event.button !== 0) {
             return;
         }
         const handle = event.currentTarget as HTMLElement;
@@ -500,10 +643,6 @@ export class RtdeBoardComponent implements OnDestroy {
             return;
         }
         this.settleGhost(id);
-    }
-
-    trackColumn(_index: number, column: BoardColumn): number {
-        return column.number;
     }
 
     trackSlot(_index: number, slot: BoardSlot): string {
@@ -677,6 +816,202 @@ export class RtdeBoardComponent implements OnDestroy {
         return this.modulesRef?.nativeElement.scrollLeft ?? this.viewportScroll();
     }
 
+    private onCubePointerMove = (event: PointerEvent): void => {
+        if (this.cubePointer !== event.pointerId) {
+            return;
+        }
+        const distance = Math.hypot(event.clientX - this.cubeOriginX, event.clientY - this.cubeOriginY);
+        if (distance <= CUBE_CLICK_PX) {
+            return;
+        }
+        event.preventDefault();
+        const dx = event.clientX - this.cubeLastX;
+        const dy = event.clientY - this.cubeLastY;
+        this.cubeLastX = event.clientX;
+        this.cubeLastY = event.clientY;
+        this.cubeDragX -= dy * CUBE_DRAG_DEG_PER_PX;
+        this.cubeDragY += dx * CUBE_DRAG_DEG_PER_PX;
+        this.scheduleCubePaint();
+    };
+
+    private onCubePointerUp = (event: PointerEvent): void => {
+        if (this.cubePointer !== event.pointerId) {
+            return;
+        }
+        const faceId = this.cubeGrabFace;
+        const distance = Math.hypot(event.clientX - this.cubeOriginX, event.clientY - this.cubeOriginY);
+        const angle = { x: normalizeAngle(this.cubeDragX), y: normalizeAngle(this.cubeDragY) };
+        if (this.cubePaintFrame !== 0) {
+            cancelAnimationFrame(this.cubePaintFrame);
+            this.cubePaintFrame = 0;
+        }
+        this.applyCubeTransform(`rotateX(${angle.x}deg) rotateY(${angle.y}deg)`);
+        this.cubePointer = -1;
+        this.cubeGrabFace = null;
+        this.detachCubeListeners();
+        const scene = this.cubeSceneRef?.nativeElement;
+        if (scene?.hasPointerCapture(event.pointerId)) {
+            scene.releasePointerCapture(event.pointerId);
+        }
+        this.zone.run(() => {
+            this.cubeDragging.set(false);
+            if (distance <= CUBE_CLICK_PX && faceId) {
+                this.turnFaceForward(faceId);
+                return;
+            }
+            this.cube.set(angle);
+            this.persist(this.order(), this.currentScroll());
+        });
+    };
+
+    private turnFaceForward(faceId: string): void {
+        const home = CUBE_FACES.find((face) => face.id === faceId);
+        if (!home) {
+            return;
+        }
+        const current = this.cube();
+        const next = { x: this.nearestAngle(current.x, home.x), y: this.nearestAngle(current.y, home.y) };
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (reduced || (normalizeAngle(next.x) === normalizeAngle(current.x) && normalizeAngle(next.y) === normalizeAngle(current.y))) {
+            this.cube.set({ x: normalizeAngle(next.x), y: normalizeAngle(next.y) });
+            this.persist(this.order(), this.currentScroll());
+            return;
+        }
+        this.cubeTurning.set(true);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (!this.cubeTurning()) {
+                    return;
+                }
+                this.cube.set(next);
+                this.clearCubeTurn();
+                this.cubeTurnTimer = setTimeout(() => {
+                    this.cubeTurnTimer = undefined;
+                    this.cubeTurning.set(false);
+                    this.cube.set({ x: normalizeAngle(next.x), y: normalizeAngle(next.y) });
+                    this.persist(this.order(), this.currentScroll());
+                }, CUBE_TURN_MS);
+            });
+        });
+    }
+
+    private facingFace(x: number, y: number): string {
+        let best = CUBE_FACES[0].id;
+        let bestZ = -Infinity;
+        for (const face of CUBE_FACES) {
+            const center = this.faceCenter(face.id);
+            const turned = this.rotateX(this.rotateY(center, y), x);
+            if (turned.z > bestZ) {
+                bestZ = turned.z;
+                best = face.id;
+            }
+        }
+        return best;
+    }
+
+    private faceCenter(id: string): { x: number; y: number; z: number } {
+        if (id === 'R') {
+            return { x: 1, y: 0, z: 0 };
+        }
+        if (id === 'B') {
+            return { x: 0, y: 0, z: -1 };
+        }
+        if (id === 'L') {
+            return { x: -1, y: 0, z: 0 };
+        }
+        if (id === 'T') {
+            return { x: 0, y: -1, z: 0 };
+        }
+        if (id === 'D') {
+            return { x: 0, y: 1, z: 0 };
+        }
+        return { x: 0, y: 0, z: 1 };
+    }
+
+    private rotateY(point: { x: number; y: number; z: number }, degrees: number): { x: number; y: number; z: number } {
+        const radians = (degrees * Math.PI) / 180;
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        return { x: cos * point.x + sin * point.z, y: point.y, z: -sin * point.x + cos * point.z };
+    }
+
+    private rotateX(point: { x: number; y: number; z: number }, degrees: number): { x: number; y: number; z: number } {
+        const radians = (degrees * Math.PI) / 180;
+        const cos = Math.cos(radians);
+        const sin = Math.sin(radians);
+        return { x: point.x, y: cos * point.y - sin * point.z, z: sin * point.y + cos * point.z };
+    }
+
+    private nearestAngle(current: number, target: number): number {
+        const turns = Math.round((current - target) / 360);
+        return target + turns * 360;
+    }
+
+    private measureCube(): void {
+        const scene = this.cubeSceneRef?.nativeElement;
+        if (!scene) {
+            return;
+        }
+        const fit = Math.min(scene.clientWidth, scene.clientHeight);
+        const side = Math.max(120, Math.floor(fit / Math.SQRT2));
+        if (side !== this.cubeSide()) {
+            this.cubeSide.set(side);
+        }
+    }
+
+    private applyCubeTransform(transform: string): void {
+        const cube = this.cubeRef?.nativeElement;
+        if (cube) {
+            cube.style.transform = transform;
+        }
+    }
+
+    private scheduleCubePaint(): void {
+        if (this.cubePaintFrame !== 0) {
+            return;
+        }
+        this.cubePaintFrame = requestAnimationFrame(() => {
+            this.cubePaintFrame = 0;
+            if (this.cubePointer === -1) {
+                return;
+            }
+            this.applyCubeTransform(`rotateX(${this.cubeDragX}deg) rotateY(${this.cubeDragY}deg)`);
+        });
+    }
+
+    private attachCubeListeners(): void {
+        this.zone.runOutsideAngular(() => {
+            document.addEventListener('pointermove', this.onCubePointerMove, true);
+            document.addEventListener('pointerup', this.onCubePointerUp, true);
+            document.addEventListener('pointercancel', this.onCubePointerUp, true);
+        });
+    }
+
+    private detachCubeListeners(): void {
+        document.removeEventListener('pointermove', this.onCubePointerMove, true);
+        document.removeEventListener('pointerup', this.onCubePointerUp, true);
+        document.removeEventListener('pointercancel', this.onCubePointerUp, true);
+    }
+
+    private clearCubeTurn(): void {
+        if (this.cubeTurnTimer !== undefined) {
+            clearTimeout(this.cubeTurnTimer);
+            this.cubeTurnTimer = undefined;
+        }
+    }
+
+    private clearCubeResume(): void {
+        if (this.cubeResumeTimer !== undefined) {
+            clearTimeout(this.cubeResumeTimer);
+            this.cubeResumeTimer = undefined;
+        }
+    }
+
+    private sameCube(cube: CubeAngles): boolean {
+        const current = this.cube();
+        return normalizeAngle(current.x) === cube.x && normalizeAngle(current.y) === cube.y;
+    }
+
     private sameCards(cards: Record<string, number>): boolean {
         const current = this.cardScroll();
         const keys = new Set([...Object.keys(cards), ...Object.keys(current)]);
@@ -725,7 +1060,13 @@ export class RtdeBoardComponent implements OnDestroy {
     }
 
     private persist(ids: string[], scroll: number): void {
-        const layout: BoardLayout = { order: ids, scroll: Math.max(0, Math.round(scroll)), cards: { ...this.cardScroll() } };
+        const cube = this.cube();
+        const layout: BoardLayout = {
+            order: ids,
+            scroll: Math.max(0, Math.round(scroll)),
+            cards: { ...this.cardScroll() },
+            cube: { x: normalizeAngle(cube.x), y: normalizeAngle(cube.y) },
+        };
         this.writeLocal(this.layoutKey(), layout);
         this.layoutSaver()?.(layout);
         this.viewportScroll.set(layout.scroll);

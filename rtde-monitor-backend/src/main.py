@@ -112,6 +112,7 @@ class Board:
                         "order": layout["order"],
                         "scroll": layout["scroll"],
                         "cards": layout.get("cards", {}),
+                        "cube": layout.get("cube", {"x": 0, "y": 0}),
                     }
                 )
             )

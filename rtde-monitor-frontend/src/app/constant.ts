@@ -30,13 +30,26 @@ export function monitorPageId(value: unknown): MonitorPageId {
 }
 
 export const LAYOUT_STORAGE_PREFIX = 'rtde-monitor.layout.';
-export const LAYOUT_COLUMN_COUNT = 8;
 export const LAYOUT_FOCUS_COLUMNS = 2;
-/** A1 and A2 fill the first two columns. Later columns have an A and a B row, through B8. */
-export const LAYOUT_SLOTS: readonly string[] = Array.from({ length: LAYOUT_COLUMN_COUNT }, (_, index) => {
-    const column = index + 1;
-    return column <= LAYOUT_FOCUS_COLUMNS ? [`A${column}`] : [`A${column}`, `B${column}`];
-}).flat();
+/** One card on each face. `x` and `y` are the cube angles that bring that face to the front. */
+export const CUBE_FACES: readonly { id: string; rotation: string; x: number; y: number }[] = [
+    { id: 'F', rotation: 'rotateY(0deg)', x: 0, y: 0 },
+    { id: 'R', rotation: 'rotateY(90deg)', x: 0, y: -90 },
+    { id: 'B', rotation: 'rotateY(180deg)', x: 0, y: 180 },
+    { id: 'L', rotation: 'rotateY(-90deg)', x: 0, y: 90 },
+    { id: 'T', rotation: 'rotateX(90deg)', x: -90, y: 0 },
+    { id: 'D', rotation: 'rotateX(-90deg)', x: 90, y: 0 },
+];
+/** A1 and A2 fill the first two columns. The six cube faces follow, in CUBE_FACES order. */
+export const LAYOUT_SLOTS: readonly string[] = [
+    ...Array.from({ length: LAYOUT_FOCUS_COLUMNS }, (_, index) => `A${index + 1}`),
+    ...CUBE_FACES.map((face) => face.id),
+];
+
+export const CUBE_DRAG_DEG_PER_PX = 0.5;
+export const CUBE_CLICK_PX = 8;
+export const CUBE_TURN_MS = 280;
+export const CUBE_RESUME_MS = 1000;
 
 export const RECONNECT_DELAY_MS = 2000;
 export const WRITE_TIMEOUT_MS = 5000;

@@ -67,7 +67,7 @@ export class RtdeStreamService {
             const layout = pendingLayout;
             pendingLayout = null;
             edited = true;
-            socket.send(JSON.stringify({ op: 'layout', order: layout.order, scroll: layout.scroll, cards: layout.cards }));
+            socket.send(JSON.stringify({ op: 'layout', order: layout.order, scroll: layout.scroll, cards: layout.cards, cube: layout.cube }));
         };
 
         const applyLayout = (layout: BoardLayout): void => {

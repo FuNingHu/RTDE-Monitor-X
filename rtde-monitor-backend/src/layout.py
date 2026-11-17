@@ -1,4 +1,4 @@
-"""Persist operator-screen card order and scroll position across robot restarts."""
+"""Persist operator-screen card order, scroll position, and cube angle across robot restarts."""
 
 import json
 import os
@@ -12,7 +12,7 @@ _MAX_IDS = 64
 
 
 def _empty():
-    return {"order": [], "scroll": 0, "cards": {}}
+    return {"order": [], "scroll": 0, "cards": {}, "cube": {"x": 0, "y": 0}}
 
 
 def read_layout(key):
@@ -51,6 +51,7 @@ def _normalize(raw):
     if isinstance(scroll, bool) or not isinstance(scroll, (int, float)):
         scroll = 0
     cards = _cards(raw.get("cards") if isinstance(raw, dict) else None)
+    cube = _cube(raw.get("cube") if isinstance(raw, dict) else None)
     ids = []
     seen = set()
     for item in order:
@@ -62,7 +63,22 @@ def _normalize(raw):
         else:
             # An empty or unknown entry keeps its index so later cards stay in their slots.
             ids.append("")
-    return {"order": ids, "scroll": max(0, int(scroll)), "cards": cards}
+    return {"order": ids, "scroll": max(0, int(scroll)), "cards": cards, "cube": cube}
+
+
+def _angle(value):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return 0
+    wrapped = int(round(float(value))) % 360
+    if wrapped > 180:
+        wrapped -= 360
+    return wrapped
+
+
+def _cube(raw):
+    if not isinstance(raw, dict):
+        return {"x": 0, "y": 0}
+    return {"x": _angle(raw.get("x")), "y": _angle(raw.get("y"))}
 
 
 def _cards(raw):

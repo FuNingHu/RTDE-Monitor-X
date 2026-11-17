@@ -1,20 +1,20 @@
 <div class="toolbar">
-    <section class="status" [class.live]="snapshot()?.ok">
-        <strong class="status-word" [style.animation-duration.s]="statusBlinkPeriod">{{ (snapshot()?.ok ? 'status.live' : 'status.waiting') | translate }}</strong>
-        <span *ngIf="snapshot()?.host">{{ screenTitleKey() | translate }} ·</span>
+    <section class="status" [class.live]="shownSnapshot()?.ok">
+        <strong class="status-word" [style.animation-duration.s]="statusBlinkPeriod">{{ (shownSnapshot()?.ok ? 'status.live' : 'status.waiting') | translate }}</strong>
+        <span *ngIf="shownSnapshot()?.host">{{ screenTitleKey() | translate }} ·</span>
         <button
-            *ngIf="snapshot()?.host"
+            *ngIf="shownSnapshot()?.host"
             type="button"
             class="frequency"
             (click)="frequencyOpen.set(true)"
             [attr.aria-label]="'frequency.open' | translate"
         >
-            {{ snapshot()?.frequency }} {{ 'frequency.unit' | translate }}
+            {{ shownSnapshot()?.frequency }} {{ 'frequency.unit' | translate }}
         </button>
-        <span *ngIf="!snapshot()">{{ 'status.connecting' | translate }}</span>
-        <span *ngIf="snapshot()?.error">{{ snapshot()?.error }}</span>
+        <span *ngIf="!shownSnapshot()">{{ 'status.connecting' | translate }}</span>
+        <span *ngIf="shownSnapshot()?.error">{{ shownSnapshot()?.error }}</span>
         <span class="write-error" *ngIf="writeError()">{{ writeError() }}</span>
-        <span *ngIf="snapshot()?.unavailable?.length">{{ 'status.unavailable' | translate:{ count: snapshot()?.unavailable?.length } }}</span>
+        <span *ngIf="shownSnapshot()?.unavailable?.length">{{ 'status.unavailable' | translate:{ count: shownSnapshot()?.unavailable?.length } }}</span>
     </section>
 
     <label class="filter">
@@ -52,24 +52,44 @@
 
 <div class="stage" #modules (scroll)="onStageScroll()">
     <div class="stage-row">
-        <div class="column" *ngFor="let column of columns(); trackBy: trackColumn" [class.focus]="column.focus" [class.paired]="!column.focus">
-            <div
-                class="slot"
-                *ngFor="let slot of column.slots; trackBy: trackSlot"
-                [class.empty]="!slot.group"
-                [attr.data-slot-id]="slot.id"
-                [attr.data-module-id]="slot.group?.id ?? null"
-            >
+        <div class="column focus" *ngFor="let slot of focusSlots(); trackBy: trackSlot">
+            <div class="slot" [class.empty]="!slot.group" [attr.data-slot-id]="slot.id" [attr.data-module-id]="slot.group?.id ?? null">
                 <span class="slot-code">{{ slot.id }}</span>
                 <section class="module" *ngIf="slot.group as group" [class.drag-source]="draggingId() === group.id">
-                    <ng-container *ngTemplateOutlet="moduleCard; context: { group: group }"></ng-container>
+                    <ng-container *ngTemplateOutlet="moduleCard; context: { group: group, live: true }"></ng-container>
                 </section>
+            </div>
+        </div>
+        <div class="cube-scene" #cubeScene (pointerdown)="onCubePointerDown($event)">
+            <div
+                #cube
+                class="cube"
+                [class.dragging]="cubeDragging()"
+                [class.turning]="cubeTurning()"
+                [style.width.px]="cubeSide()"
+                [style.height.px]="cubeSide()"
+            >
+                <div
+                    class="face"
+                    *ngFor="let face of cubeFaces(); trackBy: trackSlot"
+                    [class.front]="face.front"
+                    [class.empty]="!face.group"
+                    [attr.data-face]="face.id"
+                    [attr.data-slot-id]="face.id"
+                    [attr.data-module-id]="face.group?.id ?? null"
+                    [style.transform]="face.transform"
+                >
+                    <span class="slot-code">{{ face.id }}</span>
+                    <section class="module" *ngIf="face.group as group" [class.drag-source]="draggingId() === group.id">
+                        <ng-container *ngTemplateOutlet="moduleCard; context: { group: group, live: true }"></ng-container>
+                    </section>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<ng-template #moduleCard let-group="group">
+<ng-template #moduleCard let-group="group" let-live="live">
     <header
         class="module-header"
         [class.locked]="filtering()"
@@ -80,7 +100,7 @@
         <span class="grip" aria-hidden="true"></span>
         <span class="module-title">{{ 'groups.' + group.id | translate }}</span>
     </header>
-    <div class="module-body" (scroll)="onCardScroll(group.id, $event)">
+    <div class="module-body" *ngIf="live" (scroll)="onCardScroll(group.id, $event)">
         <div class="bits" *ngIf="group.kind === 'bits'">
             <ng-container *ngFor="let item of group.items; trackBy: trackItem">
                 <button
@@ -123,11 +143,16 @@
         <div class="fields" *ngIf="group.kind === 'fields'">
             <ng-container *ngFor="let item of group.items; trackBy: trackItem">
                 <div class="bit-field" *ngIf="isBitWord(item); else scalarField">
-                    <div class="field">
+                    <div
+                        class="field bit-row"
+                        role="button"
+                        tabindex="0"
+                        (pointerdown)="$event.stopPropagation()"
+                        (click)="toggleBitWord(item.name)"
+                        [attr.aria-expanded]="bitWordOpen(item.name)"
+                    >
                         <span class="label">{{ wrapLabel(item.label) }}</span>
-                        <button type="button" class="value bit-toggle" (click)="toggleBitWord(item.name)" [attr.aria-expanded]="bitWordOpen(item.name)">
-                            {{ format(item) }}
-                        </button>
+                        <span class="value">{{ format(item) }}</span>
                     </div>
                     <div class="bits" *ngIf="bitWordOpen(item.name)">
                         <span
