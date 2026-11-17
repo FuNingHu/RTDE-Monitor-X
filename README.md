@@ -11,7 +11,7 @@ The field names follow the [RTDE Guide](https://docs.universal-robots.com/tutori
 | Author | FuNing Hu |
 | Released | 2026-Nov-13 |
 | Last modified | 2026-Nov-17 |
-| URCap | funh / rtde-monitor 1.0.2 |
+| URCap | funh / rtde-monitor 1.0.3 |
 
 Download the built URCap from the [releases page](https://github.com/FuNingHu/RTDE-Monitor-X/releases).
 
