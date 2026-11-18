@@ -14,7 +14,15 @@
         <span *ngIf="!shownSnapshot()">{{ 'status.connecting' | translate }}</span>
         <span *ngIf="shownSnapshot()?.error">{{ shownSnapshot()?.error }}</span>
         <span class="write-error" *ngIf="writeError()">{{ writeError() }}</span>
-        <span *ngIf="shownSnapshot()?.unavailable?.length">{{ 'status.unavailable' | translate:{ count: shownSnapshot()?.unavailable?.length } }}</span>
+        <button
+            *ngIf="shownSnapshot()?.unavailable?.length"
+            type="button"
+            class="frequency"
+            (click)="unavailableOpen.set(true)"
+            [attr.aria-label]="'unavailable.open' | translate"
+        >
+            {{ 'status.unavailable' | translate:{ count: shownSnapshot()?.unavailable?.length } }}
+        </button>
     </section>
 
     <label class="filter">
@@ -165,7 +173,14 @@
                 </div>
                 <ng-template #scalarField>
                     <div class="field">
-                        <span class="label">{{ wrapLabel(item.label) }}</span>
+                        <span class="label">
+                            {{ wrapLabel(item.label) }}
+                            <span class="meaning" *ngIf="meaning(item) as note">
+                                {{ note.prefix }}
+                                <ng-container *ngIf="note.text !== null; else reservedMeaning">{{ note.text }}</ng-container>
+                                <ng-template #reservedMeaning>{{ 'constants.reserved' | translate }}</ng-template>
+                            </span>
+                        </span>
                         <ng-container *ngTemplateOutlet="valueView; context: { item: item }"></ng-container>
                     </div>
                 </ng-template>
@@ -176,12 +191,44 @@
 
 <ng-template #valueView let-item="item">
     <span class="vector" *ngIf="isVector(item); else scalarValue">
-        <span class="vector-item" *ngFor="let part of vectorParts(item)">{{ part }}</span>
+        <ng-container *ngFor="let part of vectorParts(item); let index = index">
+            <button
+                *ngIf="hasConstant(item); else plainPart"
+                type="button"
+                class="vector-item"
+                (pointerdown)="$event.stopPropagation()"
+                (click)="toggleMeaning(item, index)"
+                [attr.aria-pressed]="meaningOpen(item, index)"
+            >
+                {{ part }}
+            </button>
+            <ng-template #plainPart>
+                <span class="vector-item">{{ part }}</span>
+            </ng-template>
+        </ng-container>
     </span>
     <ng-template #scalarValue>
-        <span class="value">{{ format(item) }}</span>
+        <button
+            *ngIf="hasConstant(item); else plainValue"
+            type="button"
+            class="value"
+            (pointerdown)="$event.stopPropagation()"
+            (click)="toggleMeaning(item)"
+            [attr.aria-pressed]="meaningOpen(item, null)"
+        >
+            {{ format(item) }}
+        </button>
+        <ng-template #plainValue>
+            <span class="value">{{ format(item) }}</span>
+        </ng-template>
     </ng-template>
 </ng-template>
+
+<app-rtde-unavailable-dialog
+    *ngIf="unavailableOpen()"
+    [fields]="shownSnapshot()?.unavailable ?? []"
+    (dismiss)="unavailableOpen.set(false)"
+></app-rtde-unavailable-dialog>
 
 <app-rtde-frequency-dialog
     *ngIf="frequencyOpen()"

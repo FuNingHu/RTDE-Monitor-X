@@ -475,6 +475,12 @@ button.cell:disabled {
     overflow-wrap: break-word;
 }
 
+.meaning {
+    margin-left: 6px;
+    color: #c05600;
+    font-weight: 600;
+}
+
 .bit.on .value {
     color: #1b7f3a;
 }
@@ -501,6 +507,35 @@ button.cell:disabled {
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
+}
+
+button.vector-item,
+button.value {
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 100%;
+    border: 0;
+    border-bottom: 1px solid currentColor;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 700;
+    line-height: inherit;
+    text-align: right;
+    text-decoration: none;
+    cursor: pointer;
+    pointer-events: auto;
+    overflow: visible;
+}
+
+button.value {
+    margin-left: auto;
+}
+
+button.vector-item {
+    justify-self: end;
 }
 
 @media (prefers-reduced-motion: reduce) {

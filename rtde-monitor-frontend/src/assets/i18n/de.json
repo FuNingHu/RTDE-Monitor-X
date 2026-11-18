@@ -18,6 +18,9 @@
         "connecting": "Verbindung zum RTDE-Backend wird hergestellt…",
         "unavailable": "{{count}} Felder sind auf dieser Steuerung nicht verfügbar"
     },
+    "constants": {
+        "reserved": "Reserviert"
+    },
     "filter": {
         "label": "Filtern",
         "placeholder": "Signalname oder Index",
@@ -59,6 +62,12 @@
         "unit": "Hz",
         "cancel": "Abbrechen",
         "confirm": "Bestätigen"
+    },
+    "unavailable": {
+        "open": "Nicht verfügbare Felder anzeigen",
+        "title": "Nicht verfügbare Felder",
+        "guide": "Weitere Informationen finden Sie unter",
+        "close": "Schließen"
     },
     "write": {
         "failed": "Register konnte nicht geschrieben werden",

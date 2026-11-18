@@ -9,6 +9,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PATH } from '../generated/contribution-constants';
 import { RtdeBoardComponent } from './components/rtde-board/rtde-board.component';
 import { RtdeFrequencyDialogComponent } from './components/rtde-frequency-dialog/rtde-frequency-dialog.component';
+import { RtdeUnavailableDialogComponent } from './components/rtde-unavailable-dialog/rtde-unavailable-dialog.component';
 import { RtdeKeypadComponent } from './components/rtde-keypad/rtde-keypad.component';
 import { RobotMonitorComponent } from './components/robot-monitor/robot-monitor.component';
 import { RobotMonitorConfigComponent } from './components/robot-monitor-config/robot-monitor-config.component';
@@ -20,7 +21,7 @@ export const httpLoaderFactory = (http: HttpBackend) =>
     ]);
 
 @NgModule({
-    declarations: [RtdeBoardComponent, RtdeFrequencyDialogComponent, RtdeKeypadComponent, RobotMonitorComponent, RobotMonitorConfigComponent],
+    declarations: [RtdeBoardComponent, RtdeFrequencyDialogComponent, RtdeUnavailableDialogComponent, RtdeKeypadComponent, RobotMonitorComponent, RobotMonitorConfigComponent],
     imports: [
         BrowserModule,
         BrowserAnimationsModule,

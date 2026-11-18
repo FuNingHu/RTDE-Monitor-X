@@ -1,0 +1,15 @@
+<div class="overlay" (click)="dismiss.emit()">
+    <section class="dialog" (click)="$event.stopPropagation()" role="dialog" [attr.aria-label]="'unavailable.title' | translate">
+        <h2>{{ 'unavailable.title' | translate }}</h2>
+        <ul>
+            <li *ngFor="let name of fields()">{{ name }}</li>
+        </ul>
+        <p class="guide">
+            {{ 'unavailable.guide' | translate }}
+            <a [href]="guideUrl" target="_blank" rel="noopener noreferrer">{{ guideUrl }}</a>
+        </p>
+        <div class="actions">
+            <button type="button" (click)="dismiss.emit()">{{ 'unavailable.close' | translate }}</button>
+        </div>
+    </section>
+</div>

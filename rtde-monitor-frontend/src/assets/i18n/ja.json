@@ -18,6 +18,9 @@
         "connecting": "RTDE バックエンドに接続しています…",
         "unavailable": "このコントローラでは {{count}} 件のフィールドを利用できません"
     },
+    "constants": {
+        "reserved": "予約済み"
+    },
     "filter": {
         "label": "絞り込み",
         "placeholder": "信号名または番号",
@@ -59,6 +62,12 @@
         "unit": "Hz",
         "cancel": "キャンセル",
         "confirm": "確定"
+    },
+    "unavailable": {
+        "open": "利用できないフィールドを表示",
+        "title": "利用できないフィールド",
+        "guide": "詳細については、次を参照してください",
+        "close": "閉じる"
     },
     "write": {
         "failed": "レジスタを書き込めませんでした",

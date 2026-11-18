@@ -18,6 +18,9 @@
         "connecting": "Connecting to the RTDE backend…",
         "unavailable": "{{count}} fields are not available on this controller"
     },
+    "constants": {
+        "reserved": "Reserved"
+    },
     "filter": {
         "label": "Filter",
         "placeholder": "Signal name or index",
@@ -59,6 +62,12 @@
         "unit": "Hz",
         "cancel": "Cancel",
         "confirm": "Confirm"
+    },
+    "unavailable": {
+        "open": "Show unavailable fields",
+        "title": "Unavailable fields",
+        "guide": "For more detailed information, consult",
+        "close": "Close"
     },
     "write": {
         "failed": "Could not write the register",

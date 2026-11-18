@@ -18,6 +18,9 @@
         "connecting": "正在连接 RTDE 后端…",
         "unavailable": "此控制器上有 {{count}} 个字段不可用"
     },
+    "constants": {
+        "reserved": "保留"
+    },
     "filter": {
         "label": "筛选",
         "placeholder": "信号名或序号",
@@ -59,6 +62,12 @@
         "unit": "Hz",
         "cancel": "取消",
         "confirm": "确认"
+    },
+    "unavailable": {
+        "open": "查看不可用字段",
+        "title": "不可用字段",
+        "guide": "为了获得更详细的信息，请查阅",
+        "close": "关闭"
     },
     "write": {
         "failed": "寄存器写入失败",

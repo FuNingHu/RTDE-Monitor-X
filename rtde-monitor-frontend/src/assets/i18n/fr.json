@@ -18,6 +18,9 @@
         "connecting": "Connexion au backend RTDE…",
         "unavailable": "{{count}} champs ne sont pas disponibles sur ce contrôleur"
     },
+    "constants": {
+        "reserved": "Réservé"
+    },
     "filter": {
         "label": "Filtrer",
         "placeholder": "Nom ou indice du signal",
@@ -59,6 +62,12 @@
         "unit": "Hz",
         "cancel": "Annuler",
         "confirm": "Confirmer"
+    },
+    "unavailable": {
+        "open": "Afficher les champs non disponibles",
+        "title": "Champs non disponibles",
+        "guide": "Pour obtenir des informations plus détaillées, consultez",
+        "close": "Fermer"
     },
     "write": {
         "failed": "Impossible d'écrire le registre",

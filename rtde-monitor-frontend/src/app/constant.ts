@@ -5,6 +5,7 @@ export const FREQUENCY_MAX_HZ = 100;
 export const FREQUENCY_DEFAULT_HZ = 20;
 export const FREQUENCY_STEP_HZ = 1;
 export const STATUS_BLINK_HZ = 0.3;
+export const RTDE_GUIDE_URL = 'https://docs.universal-robots.com/tutorials/communication-protocol-tutorials/rtde-guide.html';
 
 export const FREQUENCY_CHOICES: readonly number[] = Array.from(
     { length: (FREQUENCY_MAX_HZ - FREQUENCY_MIN_HZ) / FREQUENCY_STEP_HZ + 1 },

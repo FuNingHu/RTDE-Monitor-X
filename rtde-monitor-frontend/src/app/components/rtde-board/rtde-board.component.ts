@@ -20,6 +20,7 @@ import {
     SCROLL_RESTORE_TOLERANCE_PX,
     SCROLL_SAVE_DELAY_MS,
 } from '../../constant';
+import { constantMeaning, RTDE_CONSTANTS } from '../rtde-constants';
 import { BoardLayout, CubeAngles, RegisterWrite, RtdeGroup, RtdeItem, RtdeSnapshot, emptyBoardLayout, normalizeAngle, readBoardLayout } from '../rtde-snapshot';
 
 interface NumberEditor {
@@ -56,6 +57,7 @@ export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
     readonly layoutSaver = input<((layout: BoardLayout) => void) | undefined>(undefined);
     readonly frequencySetter = input<((frequency: number) => void) | undefined>(undefined);
     readonly frequencyOpen = signal(false);
+    readonly unavailableOpen = signal(false);
     readonly screenTitleKey = computed(() => (this.layoutKey() === 'signals' ? 'screen.signals' : 'screen.registers'));
     readonly statusBlinkPeriod = 1 / STATUS_BLINK_HZ;
     readonly query = signal('');
@@ -96,6 +98,8 @@ export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
     readonly editorBusy = signal(false);
     readonly writeError = signal('');
     private readonly openBitWords = signal<ReadonlySet<string>>(new Set());
+    /** Open constant explanations. A number is the joint index; null is a scalar field. Not persisted. */
+    private readonly openMeanings = signal<Readonly<Record<string, number | null>>>({});
     /** Card values stay on this copy while the cube is moving, so a sample cannot repaint the faces. */
     readonly shownSnapshot = signal<RtdeSnapshot | null>(null);
     private cubePaintFrame = 0;
@@ -378,6 +382,48 @@ export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
 
     isBitWord(item: RtdeItem): boolean {
         return item.name.endsWith('_bits');
+    }
+
+    hasConstant(item: RtdeItem): boolean {
+        return Object.prototype.hasOwnProperty.call(RTDE_CONSTANTS, item.name);
+    }
+
+    toggleMeaning(item: RtdeItem, index: number | null = null): void {
+        if (!this.hasConstant(item)) {
+            return;
+        }
+        const current = this.openMeanings();
+        const next = { ...current };
+        if (Object.prototype.hasOwnProperty.call(current, item.name) && current[item.name] === index) {
+            delete next[item.name];
+        } else {
+            next[item.name] = index;
+        }
+        this.openMeanings.set(next);
+    }
+
+    meaningOpen(item: RtdeItem, index: number | null): boolean {
+        const current = this.openMeanings();
+        return Object.prototype.hasOwnProperty.call(current, item.name) && current[item.name] === index;
+    }
+
+    meaning(item: RtdeItem): { prefix: string; text: string | null } | null {
+        const current = this.openMeanings();
+        if (!Object.prototype.hasOwnProperty.call(current, item.name)) {
+            return null;
+        }
+        const table = RTDE_CONSTANTS[item.name];
+        if (!table) {
+            return null;
+        }
+        const index = current[item.name];
+        const raw = typeof index === 'number' ? (Array.isArray(item.value) ? item.value[index] : undefined) : item.value;
+        const prefix = typeof index === 'number' ? `[${index}] ` : '';
+        if (typeof raw !== 'number' || !Number.isFinite(raw)) {
+            return { prefix, text: null };
+        }
+        const entry = table[Math.trunc(raw)];
+        return { prefix, text: entry ? constantMeaning(entry) : null };
     }
 
     bitWordOpen(name: string): boolean {
