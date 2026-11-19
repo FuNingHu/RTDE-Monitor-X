@@ -11,7 +11,7 @@
     "generatepath": "generate-manifest-constants ../manifest.yaml"
   },
   "private": true,
-  "license": "Apache-2.0",
+  "license": "MIT",
   "dependencies": {
     "@angular/animations": "21.0.8",
     "@angular/cdk": "21.0.6",

@@ -163,6 +163,8 @@ class RTDE(object):
         payload = struct.pack(">d", frequency)
         payload = payload + (",".join(variables).encode("utf-8"))
         result = self.__sendAndReceive(cmd, payload)
+        if not result:
+            return False
         if len(types) != 0 and not self.__list_equals(result.types, types):
             _log.error(
                 "Data type inconsistency for output setup: "
@@ -336,9 +338,12 @@ class RTDE(object):
         raise RTDEException(" _recv() Connection lost ")
 
     def __recv_to_buffer(self, timeout):
-        readable, _, xlist = select.select([self.__sock], [], [self.__sock], timeout)
+        sock = self.__sock
+        if sock is None:
+            raise RTDEException("Connection lost")
+        readable, _, xlist = select.select([sock], [], [sock], timeout)
         if len(readable):
-            more = self.__sock.recv(4096)
+            more = sock.recv(4096)
             # When the controller stops while the script is running
             if len(more) == 0:
                 _log.error(

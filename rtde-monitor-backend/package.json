@@ -9,6 +9,7 @@
     "save-docker-image": "mkdir -p dist && docker save -o dist/rtde-monitor-backend.tar rtde-monitor-backend:latest"
   },
   "private": true,
+  "license": "MIT",
   "dependencies": {},
   "devDependencies": {
     "rimraf": "5.0.7"

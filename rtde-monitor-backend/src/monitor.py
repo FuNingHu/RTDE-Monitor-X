@@ -50,9 +50,10 @@ class RecipeStream:
 
     def snapshot(self, groups_for):
         with self._lock:
+            error = "" if self._hidden_socket_error(self.error) else self.error
             return {
-                "ok": self.received and not self.error,
-                "error": self.error,
+                "ok": self.received and not error,
+                "error": error,
                 "host": f"{self.host}:{self.port}",
                 "frequency": self.frequency,
                 "unavailable": list(self.unavailable),
@@ -105,6 +106,12 @@ class RecipeStream:
             LOG.info("Splitting RTDE recipe of %s fields after: %s", len(names), exc)
             self._split(fields)
             return
+        except AttributeError as exc:
+            if "recv" not in str(exc):
+                raise
+            LOG.info("Splitting RTDE recipe of %s fields after a closed socket", len(names))
+            self._split(fields)
+            return
         self._spawn(connection, names)
 
     def _split(self, fields):
@@ -147,8 +154,10 @@ class RecipeStream:
             try:
                 state = connection.receive()
             except Exception as exc:
+                message = str(exc)
                 with self._lock:
-                    self.error = str(exc)
+                    if not self._hidden_socket_error(message):
+                        self.error = message
                 LOG.warning("RTDE receive stopped: %s", exc)
                 return
             if state is None:
@@ -158,6 +167,10 @@ class RecipeStream:
                 self.values.update(update)
                 self.received = True
                 self.error = ""
+
+    @staticmethod
+    def _hidden_socket_error(message):
+        return "has no attribute 'recv'" in message
 
     def _close_children(self):
         for connection in self._connections:

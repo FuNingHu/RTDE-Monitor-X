@@ -9,9 +9,10 @@ The field names follow the [RTDE Guide](https://docs.universal-robots.com/tutori
 | Tested on | PolyScope X 10.15 |
 | SDK | 0.22.142 |
 | Author | FuNing Hu |
+| License | MIT |
 | Released | 2026-Nov-13 |
-| Last modified | 2026-Nov-18 |
-| URCap | funh / rtde-monitor 1.0.3 |
+| Last modified | 2026-Nov-19 |
+| URCap | funh / rtde-monitor 1.0.4 |
 
 Download the built URCap from the [releases page](https://github.com/FuNingHu/RTDE-Monitor-X/releases).
 
