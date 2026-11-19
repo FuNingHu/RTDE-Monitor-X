@@ -1,18 +1,15 @@
 <div class="toolbar">
     <section class="status" [class.live]="shownSnapshot()?.ok">
         <strong class="status-word" [style.animation-duration.s]="statusBlinkPeriod">{{ (shownSnapshot()?.ok ? 'status.live' : 'status.waiting') | translate }}</strong>
-        <span *ngIf="shownSnapshot()?.host">{{ screenTitleKey() | translate }} ·</span>
+        <span>{{ screenTitleKey() | translate }} ·</span>
         <button
-            *ngIf="shownSnapshot()?.host"
             type="button"
             class="frequency"
             (click)="frequencyOpen.set(true)"
             [attr.aria-label]="'frequency.open' | translate"
         >
-            {{ shownSnapshot()?.frequency }} {{ 'frequency.unit' | translate }}
+            {{ displayedFrequency() }} {{ 'frequency.unit' | translate }}
         </button>
-        <span *ngIf="!shownSnapshot()">{{ 'status.connecting' | translate }}</span>
-        <span *ngIf="shownSnapshot()?.error">{{ shownSnapshot()?.error }}</span>
         <span class="write-error" *ngIf="writeError()">{{ writeError() }}</span>
         <button
             *ngIf="shownSnapshot()?.unavailable?.length"

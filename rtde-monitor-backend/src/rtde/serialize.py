@@ -193,6 +193,9 @@ class DataConfig(object):
                 rmd.fmt += "?"
             elif i == "IN_USE":
                 raise ValueError("An input parameter is already in use.")
+            elif i == "NOT_FOUND":
+                # The controller has no output by this name. It occupies no bytes.
+                continue
             else:
                 raise ValueError("Unknown data type: " + i)
         return rmd

@@ -1,8 +1,10 @@
 """Subscribe to RTDE outputs and keep the latest sample for the operator screens."""
 
+import errno
 import logging
 import os
 import threading
+import time
 
 import rtde
 from constants import FREQUENCY_DEFAULT_HZ, normalize_frequency
@@ -10,6 +12,36 @@ from recipes import chunk_fields, register_groups, signal_groups
 
 LOG = logging.getLogger("rtde-monitor")
 RECIPE_BUDGET = 400
+# A rejected recipe closes its socket. Later reads on that socket are not operator errors.
+_CLOSED_ERRNOS = {
+    errno.EBADF,
+    errno.EPIPE,
+    errno.ECONNRESET,
+    errno.ECONNABORTED,
+    errno.ENOTCONN,
+    getattr(errno, "ESHUTDOWN", 108),
+}
+_HIDDEN_SOCKET_TEXT = (
+    "has no attribute 'recv'",
+    "has no attribute 'send'",
+    "has no attribute 'sendall'",
+    "has no attribute 'fileno'",
+    "Bad file descriptor",
+    "Broken pipe",
+    "Connection reset by peer",
+    "Connection aborted",
+    "Transport endpoint is not connected",
+    "Connection lost",
+    "received 0 bytes",
+    "Cannot receive when RTDE synchronization is inactive",
+    "Output configuration not initialized",
+    "not connected to Robot",
+    "[Errno 9]",
+    "[Error 9]",
+    "fileno() method",
+)
+_SETUP_ATTEMPTS = 3
+_SETUP_RETRY_S = 0.15
 
 
 class RecipeStream:
@@ -73,13 +105,19 @@ class RecipeStream:
                     if self._restart.wait(0.5):
                         break
             except (OSError, TimeoutError) as exc:
-                with self._lock:
-                    self.error = f"Waiting for RTDE at {self.host}:{self.port} ({exc})"
-                LOG.warning("%s", self.error)
+                if self._hidden_socket_error(str(exc)) or self._closed_socket(exc):
+                    LOG.warning("RTDE socket closed during setup: %s", exc)
+                else:
+                    with self._lock:
+                        self.error = f"Waiting for RTDE at {self.host}:{self.port} ({exc})"
+                    LOG.warning("%s", self.error)
             except Exception as exc:
-                with self._lock:
-                    self.error = str(exc)
-                LOG.exception("RTDE setup failed")
+                if self._hidden_socket_error(str(exc)):
+                    LOG.warning("RTDE socket closed during setup: %s", exc)
+                else:
+                    with self._lock:
+                        self.error = str(exc)
+                    LOG.exception("RTDE setup failed")
             self._close_children()
             if self._stop.is_set():
                 break
@@ -96,30 +134,44 @@ class RecipeStream:
         for group in chunk_fields(self.fields, RECIPE_BUDGET):
             self._open_resilient(group)
 
-    def _open_resilient(self, fields):
+    def _open_resilient(self, fields, socket_attempts=0):
+        if not fields or self._stop.is_set():
+            return
         names = [name for name, _size in fields]
         try:
-            connection = self._connect_and_start(names)
-        except (OSError, TimeoutError):
+            missing, connection = self._connect_and_start(names)
+        except (TimeoutError, rtde.RTDETimeoutException):
             raise
-        except (ValueError, rtde.RTDEException) as exc:
-            LOG.info("Splitting RTDE recipe of %s fields after: %s", len(names), exc)
-            self._split(fields)
-            return
-        except AttributeError as exc:
-            if "recv" not in str(exc):
-                raise
-            LOG.info("Splitting RTDE recipe of %s fields after a closed socket", len(names))
-            self._split(fields)
+        except Exception as exc:
+            if self._named_rejection(exc):
+                if len(fields) == 1:
+                    self._record_unavailable(names)
+                    LOG.info("RTDE field unavailable: %s (%s)", names[0], exc)
+                    return
+                LOG.info("Splitting RTDE recipe of %s fields after: %s", len(names), exc)
+                self._split(fields)
+                return
+            if self._socket_failure(exc) or self._ambiguous_setup_failure(exc):
+                if socket_attempts + 1 < _SETUP_ATTEMPTS:
+                    time.sleep(_SETUP_RETRY_S)
+                    self._open_resilient(fields, socket_attempts + 1)
+                    return
+                if len(fields) == 1:
+                    LOG.info("Not marking %s unavailable after: %s", names[0], exc)
+                    return
+                LOG.info("Splitting RTDE recipe of %s fields after: %s", len(names), exc)
+                self._split(fields)
+                return
+            raise
+        if missing:
+            self._record_unavailable(missing)
+            kept = [field for field in fields if field[0] not in missing]
+            if kept:
+                self._open_resilient(kept)
             return
         self._spawn(connection, names)
 
     def _split(self, fields):
-        if len(fields) <= 1:
-            if fields:
-                with self._lock:
-                    self.unavailable.append(fields[0][0])
-            return
         middle = len(fields) // 2
         self._open_resilient(fields[:middle])
         self._open_resilient(fields[middle:])
@@ -130,18 +182,45 @@ class RecipeStream:
         try:
             if not connection.send_output_setup(names, frequency=self.frequency):
                 raise ValueError("output setup rejected")
+            config = connection._RTDE__output_config
+            if len(config.types) != len(names):
+                raise ValueError("output setup rejected")
+            missing = [name for name, kind in zip(names, config.types) if kind == "NOT_FOUND"]
+            if missing:
+                connection.disconnect()
+                return missing, None
             if not connection.send_start():
                 raise ValueError("RTDE start failed")
         except Exception:
             connection.disconnect()
             raise
-        config = connection._RTDE__output_config
         with self._lock:
-            for name, type_name in zip(config.names, config.types):
+            for name, type_name in zip(names, config.types):
                 self.types[name] = type_name
             self.error = ""
         LOG.info("RTDE recipe started with %s fields", len(names))
-        return connection
+        return [], connection
+
+    def _record_unavailable(self, names):
+        with self._lock:
+            known = set(self.unavailable)
+            for name in names:
+                if name not in known:
+                    self.unavailable.append(name)
+                    known.add(name)
+
+    def _socket_failure(self, exc):
+        return self._closed_socket(exc) or self._hidden_socket_error(str(exc))
+
+    @staticmethod
+    def _named_rejection(exc):
+        message = str(exc)
+        return isinstance(exc, ValueError) and ("NOT_FOUND" in message or "Unknown data type" in message)
+
+    @staticmethod
+    def _ambiguous_setup_failure(exc):
+        message = str(exc)
+        return message in ("output setup rejected", "RTDE start failed")
 
     def _spawn(self, connection, names):
         thread = threading.Thread(target=self._receive, args=(connection, names), daemon=True)
@@ -169,8 +248,12 @@ class RecipeStream:
                 self.error = ""
 
     @staticmethod
+    def _closed_socket(exc):
+        return getattr(exc, "errno", None) in _CLOSED_ERRNOS
+
+    @staticmethod
     def _hidden_socket_error(message):
-        return "has no attribute 'recv'" in message
+        return any(fragment in message for fragment in _HIDDEN_SOCKET_TEXT)
 
     def _close_children(self):
         for connection in self._connections:

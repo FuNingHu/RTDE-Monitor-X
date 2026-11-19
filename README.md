@@ -12,7 +12,7 @@ The field names follow the [RTDE Guide](https://docs.universal-robots.com/tutori
 | License | MIT |
 | Released | 2026-Nov-13 |
 | Last modified | 2026-Nov-19 |
-| URCap | funh / rtde-monitor 1.0.4 |
+| URCap | funh / rtde-monitor 1.0.5 |
 
 Download the built URCap from the [releases page](https://github.com/FuNingHu/RTDE-Monitor-X/releases).
 
