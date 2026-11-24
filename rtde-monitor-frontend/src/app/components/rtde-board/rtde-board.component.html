@@ -90,6 +90,15 @@
                     </section>
                 </div>
             </div>
+            <button
+                *ngIf="frontFaceTitleKey() as titleKey"
+                type="button"
+                class="cube-face-title"
+                (pointerdown)="$event.stopPropagation()"
+                (click)="straightenFrontFace()"
+            >
+                {{ titleKey | translate }}
+            </button>
         </div>
     </div>
 </div>
@@ -152,7 +161,6 @@
                         class="field bit-row"
                         role="button"
                         tabindex="0"
-                        (pointerdown)="$event.stopPropagation()"
                         (click)="toggleBitWord(item.name)"
                         [attr.aria-expanded]="bitWordOpen(item.name)"
                     >
@@ -193,7 +201,6 @@
                 *ngIf="hasConstant(item); else plainPart"
                 type="button"
                 class="vector-item"
-                (pointerdown)="$event.stopPropagation()"
                 (click)="toggleMeaning(item, index)"
                 [attr.aria-pressed]="meaningOpen(item, index)"
             >
@@ -209,7 +216,6 @@
             *ngIf="hasConstant(item); else plainValue"
             type="button"
             class="value"
-            (pointerdown)="$event.stopPropagation()"
             (click)="toggleMeaning(item)"
             [attr.aria-pressed]="meaningOpen(item, null)"
         >

@@ -82,6 +82,12 @@ export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
     private settleTimer: ReturnType<typeof setTimeout> | undefined;
     private scrollSaveTimer: ReturnType<typeof setTimeout> | undefined;
     private cubePointer = -1;
+    private pagePointer = -1;
+    private pageBody: HTMLElement | null = null;
+    private pageOriginX = 0;
+    private pageOriginY = 0;
+    private pageOriginTop = 0;
+    private pageMoved = false;
     private cubeOriginX = 0;
     private cubeOriginY = 0;
     private cubeLastX = 0;
@@ -169,6 +175,11 @@ export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
     readonly focusSlots = computed(() => this.slots().filter((slot) => slot.focus));
 
     readonly frontFaceId = computed(() => this.facingFace(this.cube().x, this.cube().y));
+
+    readonly frontFaceTitleKey = computed(() => {
+        const group = this.slots().find((slot) => slot.id === this.frontFaceId())?.group;
+        return group ? `groups.${group.id}` : '';
+    });
 
     readonly cubeTransform = computed(() => {
         const cube = this.cube();
@@ -560,9 +571,17 @@ export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
         this.clearScrollSave();
         this.detachDragListeners();
         this.detachCubeListeners();
+        this.detachPageListeners();
         this.releaseCapture(this.dragPointer);
         this.ghost?.remove();
         this.ghost = null;
+    }
+
+    straightenFrontFace(): void {
+        if (this.draggingId() || this.settleTimer || this.cubePointer !== -1 || this.cubeTurning()) {
+            return;
+        }
+        this.turnFaceForward(this.frontFaceId());
     }
 
     onCubePointerDown(event: PointerEvent): void {
@@ -573,14 +592,14 @@ export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
         if (!(target instanceof Element)) {
             return;
         }
-        if (target.closest('.module-header')) {
+        if (target.closest('.face.front')) {
+            if (!target.closest('.module-header')) {
+                this.beginPageScroll(event, target);
+            }
             return;
         }
         const face = target.closest('[data-face]');
         const faceId = face?.getAttribute('data-face') ?? null;
-        if (faceId && faceId === this.frontFaceId() && target.closest('.module')) {
-            return;
-        }
         event.preventDefault();
         const angle = this.cube();
         this.cubePointer = event.pointerId;
@@ -862,20 +881,84 @@ export class RtdeBoardComponent implements AfterViewInit, OnDestroy {
         return this.modulesRef?.nativeElement.scrollLeft ?? this.viewportScroll();
     }
 
+    private beginPageScroll(event: PointerEvent, target: Element): void {
+        const body = target.closest('.module-body');
+        if (!(body instanceof HTMLElement) || this.pagePointer !== -1) {
+            return;
+        }
+        this.pagePointer = event.pointerId;
+        this.pageBody = body;
+        this.pageOriginX = event.clientX;
+        this.pageOriginY = event.clientY;
+        this.pageOriginTop = body.scrollTop;
+        this.pageMoved = false;
+        this.attachPageListeners();
+    }
+
+    private onPagePointerMove = (event: PointerEvent): void => {
+        const body = this.pageBody;
+        if (this.pagePointer !== event.pointerId || !body) {
+            return;
+        }
+        const dx = event.clientX - this.pageOriginX;
+        const dy = event.clientY - this.pageOriginY;
+        if (!this.pageMoved && Math.hypot(dx, dy) <= CUBE_CLICK_PX) {
+            return;
+        }
+        if (!this.pageMoved) {
+            this.pageMoved = true;
+            try {
+                body.setPointerCapture(event.pointerId);
+            } catch {
+                // Document listeners keep the scroll going if capture is unavailable.
+            }
+        }
+        event.preventDefault();
+        body.scrollTop = this.pageOriginTop - dy;
+    };
+
+    private onPagePointerUp = (event: PointerEvent): void => {
+        if (this.pagePointer !== event.pointerId) {
+            return;
+        }
+        const body = this.pageBody;
+        if (body?.hasPointerCapture(event.pointerId)) {
+            body.releasePointerCapture(event.pointerId);
+        }
+        this.pagePointer = -1;
+        this.pageBody = null;
+        this.detachPageListeners();
+    };
+
+    private attachPageListeners(): void {
+        this.zone.runOutsideAngular(() => {
+            document.addEventListener('pointermove', this.onPagePointerMove, true);
+            document.addEventListener('pointerup', this.onPagePointerUp, true);
+            document.addEventListener('pointercancel', this.onPagePointerUp, true);
+        });
+    }
+
+    private detachPageListeners(): void {
+        document.removeEventListener('pointermove', this.onPagePointerMove, true);
+        document.removeEventListener('pointerup', this.onPagePointerUp, true);
+        document.removeEventListener('pointercancel', this.onPagePointerUp, true);
+    }
+
     private onCubePointerMove = (event: PointerEvent): void => {
         if (this.cubePointer !== event.pointerId) {
             return;
         }
+        event.preventDefault();
         const distance = Math.hypot(event.clientX - this.cubeOriginX, event.clientY - this.cubeOriginY);
         if (distance <= CUBE_CLICK_PX) {
             return;
         }
-        event.preventDefault();
         const dx = event.clientX - this.cubeLastX;
         const dy = event.clientY - this.cubeLastY;
         this.cubeLastX = event.clientX;
         this.cubeLastY = event.clientY;
         this.cubeDragX -= dy * CUBE_DRAG_DEG_PER_PX;
+        // Positive rotateY moves the front face to the right, with the pointer.
         this.cubeDragY += dx * CUBE_DRAG_DEG_PER_PX;
         this.scheduleCubePaint();
     };

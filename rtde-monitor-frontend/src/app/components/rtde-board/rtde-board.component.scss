@@ -195,6 +195,7 @@
 }
 
 .cube-scene {
+    position: relative;
     flex: 1 1 auto;
     min-width: 220px;
     min-height: 0;
@@ -203,6 +204,30 @@
     justify-content: center;
     perspective: 1100px;
     perspective-origin: center center;
+    touch-action: none;
+}
+
+.cube-face-title {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 2;
+    max-width: calc(100% - 16px);
+    margin: 0;
+    border: 0;
+    padding: 0;
+    overflow: hidden;
+    background: transparent;
+    color: var(--color-text-primary, #1a1a1a);
+    font: inherit;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.45;
+    cursor: pointer;
 }
 
 .cube {
@@ -210,6 +235,7 @@
     flex: none;
     transform-style: preserve-3d;
     will-change: transform;
+    touch-action: none;
 }
 
 .cube.dragging {
@@ -257,6 +283,10 @@
 .cube.dragging .module,
 .cube.turning .module {
     pointer-events: none;
+}
+
+.face.front .module-body {
+    touch-action: pan-y;
 }
 
 .face .module {

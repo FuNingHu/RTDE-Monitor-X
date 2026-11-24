@@ -11,8 +11,8 @@ The field names follow the [RTDE Guide](https://docs.universal-robots.com/tutori
 | Author | FuNing Hu |
 | License | MIT |
 | Released | 2026-Nov-13 |
-| Last modified | 2026-Nov-19 |
-| URCap | funh / rtde-monitor 1.0.5 |
+| Last modified | 2026-Nov-24 |
+| URCap | funh / rtde-monitor 1.0.6 |
 
 Download the built URCap from the [releases page](https://github.com/FuNingHu/RTDE-Monitor-X/releases).
 
@@ -36,7 +36,7 @@ Robot Status shows the controller outputs that are not general-purpose registers
 
 ## Turn the cube
 
-Drag a side face, or the space around the cube, to rotate it. Click a side face to bring that card to the front. The values stay as they were while the cube is moving, and sampling resumes one second after it stops. Each page keeps its own cube angle.
+Drag a side face, or the space around the cube, to rotate it. The cube turns the same way as the pointer. Dragging the front card scrolls that card and does not rotate the cube. Click a side face to bring that card to the front. The upper right shows the front card's title, and clicking the title turns that face upright. The values stay as they were while the cube is moving, and sampling resumes one second after it stops. Each page keeps its own cube angle.
 
 ![Robot Status cube turning from Payload and energy through the other status cards](pictures/rtde-monitor-select-focus.gif)
 
